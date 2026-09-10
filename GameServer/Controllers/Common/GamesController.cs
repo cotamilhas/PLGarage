@@ -411,9 +411,9 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games.xml")]
         public IActionResult CreateGame(Game game)
         {
-            var user = Session.GetUser(database, User);
+            var session = Session.GetSession(database, User);
             var HostIP = HttpContext.Connection.RemoteIpAddress?.ToString();
-            return Content(Games.CreateGame(database, user, game, HostIP), "application/xml;charset=utf-8");
+            return Content(Games.CreateGame(database, session, game, HostIP), "application/xml;charset=utf-8");
         }
 
         [HttpPut]
@@ -421,8 +421,8 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games/{id}.xml")]
         public IActionResult LaunchGame(int id)
         {
-            var user = Session.GetUser(database, User);
-            return Content(Games.LaunchGame(database, user, id), "application/xml;charset=utf-8");
+            var session = Session.GetSession(database, User);
+            return Content(Games.LaunchGame(database, session, id), "application/xml;charset=utf-8");
         }
 
         [Authorize]
@@ -430,8 +430,8 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games/{id}.xml")]
         public IActionResult CancelGame(int id)
         {
-            var user = Session.GetUser(database, User);
-            return Content(Games.CancelGame(database, user, id), "application/xml;charset=utf-8");
+            var session = Session.GetSession(database, User);
+            return Content(Games.CancelGame(database, session, id), "application/xml;charset=utf-8");
         }
 
         [HttpPut]
@@ -439,8 +439,8 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games/{game_id}/join.xml")]
         public IActionResult JoinGame(int game_id)
         {
-            var user = Session.GetUser(database, User);
-            return Content(Games.JoinGame(database, user, game_id), "application/xml;charset=utf-8");
+            var session = Session.GetSession(database, User);
+            return Content(Games.JoinGame(database, session, game_id), "application/xml;charset=utf-8");
         }
 
         [HttpDelete]
@@ -448,8 +448,8 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games/{game_id}/players.xml")]
         public IActionResult RemovePlayer(int game_id)
         {
-            var user = Session.GetUser(database, User);
-            return Content(Games.RemovePlayer(database, user, game_id), "application/xml;charset=utf-8");
+            var session = Session.GetSession(database, User);
+            return Content(Games.RemovePlayer(database, session, game_id), "application/xml;charset=utf-8");
         }
 
         [HttpPut]
@@ -457,8 +457,8 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games/{game_id}/disconnect.xml")]
         public IActionResult LeaveGame(int game_id)
         {
-            var user = Session.GetUser(database, User);
-            return Content(Games.LeaveGame(database, user, game_id), "application/xml;charset=utf-8");
+            var session = Session.GetSession(database, User);
+            return Content(Games.LeaveGame(database, session, game_id), "application/xml;charset=utf-8");
         }
 
         [HttpPut]
@@ -475,8 +475,8 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games/{game_id}/forfeit.xml")]
         public IActionResult PlayerForfeit(int game_id)
         {
-            var user = Session.GetUser(database, User);
-            return Content(Games.PlayerForfeit(database, user, game_id), "application/xml;charset=utf-8");
+            var session = Session.GetSession(database, User);
+            return Content(Games.PlayerForfeit(database, session, game_id), "application/xml;charset=utf-8");
         }
 
         [HttpPut]
@@ -484,8 +484,8 @@ namespace GameServer.Controllers.Common
         [Route("/multiplayer_games/{game_id}/finish.xml")]
         public IActionResult PlayerFinish(int game_id)
         {
-            var user = Session.GetUser(database, User);
-            return Content(Games.PlayerFinish(database, user, game_id), "application/xml;charset=utf-8");
+            var session = Session.GetSession(database, User);
+            return Content(Games.PlayerFinish(database, session, game_id), "application/xml;charset=utf-8");
         }
 
         [HttpPut]

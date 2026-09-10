@@ -22,6 +22,7 @@ namespace GameServer.Models.GameBrowser
         public string Password { get; set; }
         public int LobbyChannelId { get; set; }
         public int NumberLaps { get; set; }
+        public bool IsMNR { get; set; }
         public List<GamePlayerData> Players { get; set; }
     }
 }

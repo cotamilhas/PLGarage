@@ -15,6 +15,11 @@ namespace GameServer.Implementation.Common
         private static readonly List<GameData> GameList = [];
         private static int NextId = 0;
 
+        public static List<GameData> GetGames()
+        {
+            return GameList.ToList();
+        }
+
         public static string GetList(int page, int per_page, Filters filters)
         {
             if (page == 0) page = 1;
@@ -88,9 +93,10 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string CreateGame(Database database, User user, Game game, string HostIP)
+        public static string CreateGame(Database database, SessionData session, Game game, string HostIP)
         {
-            if (game == null || user == null)
+            var user = session.User;
+            if (game == null || user == null || session == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
@@ -113,6 +119,7 @@ namespace GameServer.Implementation.Common
                 MinPlayers = game.min_players,
                 LobbyChannelId = game.lobby_channel_id,
                 NumberLaps = game.number_laps,
+                IsMNR = session.IsMNR,
                 State = GameState.PENDING,
                 Platform = game.platform,
                 Track = game.track,
@@ -133,9 +140,10 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string LaunchGame(Database database, User user, int id)
+        public static string LaunchGame(Database database, SessionData session, int id)
         {
-            if (user == null)
+            var user = session.User;
+            if (user == null || session == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
@@ -186,9 +194,10 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string CancelGame(Database database, User user, int id)
+        public static string CancelGame(Database database, SessionData session, int id)
         {
-            if (user == null)
+            var user = session.User;
+            if (user == null || session == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
@@ -210,9 +219,10 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string JoinGame(Database database, User user, int game_id)
+        public static string JoinGame(Database database, SessionData session, int game_id)
         {
-            if (user == null)
+            var user = session.User;
+            if (user == null || session == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
@@ -236,9 +246,10 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string LeaveGame(Database database, User user, int game_id)
+        public static string LeaveGame(Database database, SessionData session, int game_id)
         {
-            if (user == null)
+            var user = session.User;
+            if (user == null || session == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
@@ -267,9 +278,10 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string RemovePlayer(Database database, User user, int game_id)
+        public static string RemovePlayer(Database database, SessionData session, int game_id)
         {
-            if (user == null)
+            var user = session.User;
+            if (user == null || session == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
@@ -305,9 +317,10 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string PlayerForfeit(Database database, User user, int game_id)
+        public static string PlayerForfeit(Database database, SessionData session, int game_id)
         {
-            if (user == null)
+            var user = session.User;
+            if (user == null || session == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
@@ -336,12 +349,13 @@ namespace GameServer.Implementation.Common
             return resp.Serialize();
         }
 
-        public static string PlayerFinish(Database database, User user, int game_id)
+        public static string PlayerFinish(Database database, SessionData session, int game_id)
         {
+            var user = session.User;
             var game = GameList.FirstOrDefault(match => match.Id == game_id);
             var player = user != null && game != null ? game.Players.FirstOrDefault(match => match.PlayerId == user.UserId) : null;
 
-            if (user == null || game == null || player == null)
+            if (user == null || session == null || game == null || player == null)
             {
                 var errorResp = new Response<EmptyResponse>
                 {
