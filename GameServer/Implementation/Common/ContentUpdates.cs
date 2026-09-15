@@ -1,5 +1,6 @@
 ﻿using GameServer.Models;
 using GameServer.Models.Config;
+using GameServer.Models.GameBrowser;
 using GameServer.Models.PlayerData;
 using GameServer.Models.PlayerData.PlayerCreations;
 using GameServer.Models.Request;
@@ -19,7 +20,7 @@ namespace GameServer.Implementation.Common
 {
     public class ContentUpdates
     {
-        public static string GetLatest(Database database, Platform platform, ContentUpdateType content_update_type, string serverURL)
+        public static string GetLatest(Database database, IUGCStorage storage, Platform platform, ContentUpdateType content_update_type, string serverURL)
         {
             var resp = new Response<List<content_update>>
             {
@@ -54,7 +55,7 @@ namespace GameServer.Implementation.Common
             {
                 resp.status.id = 0;
                 resp.status.message = "Successful completion";
-                data = GetHotlapData(database);
+                data = GetHotlapData(database, storage);
                 resp.response.Add(new content_update
                 {
                     available_date = TimeUtils.Now.ToString("yyyy-MM-ddThh:mm:sszzz"),
@@ -132,8 +133,19 @@ namespace GameServer.Implementation.Common
             }
         }
         
-        public static void GetNewHotLap(Database database)
+        public static void GetNewHotLap(Database database, IUGCStorage storage)
         {
+            if (ServerConfig.Instance.DeleteCreationData)
+            {
+                var scores = database.Scores
+                    .Where(x => x.IsMNR
+                        && x.SubGroupId == 700)
+                    .ToList();
+
+                foreach (var score in scores)
+                    storage.RemoveGhostCarData((GameType)(score.SubGroupId + 10), score.Platform, score.SubKeyId, score.PlayerId);
+            }
+
             database.Scores.RemoveRange(database.Scores.Where(match => match.SubGroupId == 700 && match.IsMNR).ToList());
 
             database.SaveChanges();
@@ -213,7 +225,7 @@ namespace GameServer.Implementation.Common
             ServerCommunication.NotifyHotSeatPlaylistReset();
         }
         
-        private static string GetHotlapData(Database database)
+        private static string GetHotlapData(Database database, IUGCStorage storage)
         {
             PlayerCreationData creation = null;
 
@@ -221,7 +233,7 @@ namespace GameServer.Implementation.Common
 
             if (hotLap == null)
             {
-                GetNewHotLap(database);
+                GetNewHotLap(database, storage);
                 hotLap = ReadHotlapData();
             }
 

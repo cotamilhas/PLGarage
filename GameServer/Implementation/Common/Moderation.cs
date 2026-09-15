@@ -364,7 +364,7 @@ namespace GameServer.Implementation.Common
         #endregion
 
         #region CreationManagement
-        public static string SetModerationStatus(Database database, int id, ModerationStatus status)
+        public static string SetModerationStatus(Database database, IUGCStorage storage, int id, ModerationStatus status)
         {
             var creation = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == id);
 
@@ -378,8 +378,18 @@ namespace GameServer.Implementation.Common
                 ResetCreationStats(database, id);
                 
                 var hotlap = ContentUpdates.ReadHotlapData();
-                if (hotlap != null && hotlap.TrackId == id)
-                    ContentUpdates.GetNewHotLap(database);
+                var isCurrentHotLap = hotlap != null && hotlap.TrackId == id;
+
+                if (hotlap?.Queue != null)
+                    hotlap.Queue.RemoveAll(creationID => creationID == id);
+
+                if (hotlap != null)
+                {
+                    if (isCurrentHotLap)
+                        ContentUpdates.GetNewHotLap(database, storage);
+                    else
+                        ContentUpdates.WriteHotlapData(hotlap);
+                }
             }
 
             database.SaveChanges();
@@ -408,12 +418,21 @@ namespace GameServer.Implementation.Common
                 ID = creation.PlayerCreationId,
                 Name = creation.Name,
                 Description = creation.Description,
-                Type = creation.Type,
+                Type = creation.Type.ToString(),
                 OriginalPlayerID = creation.OriginalPlayerId,
+                OriginalUsername = database.Users.Where(user => user.UserId == creation.OriginalPlayerId)
+                    .Select(user => user.Username).FirstOrDefault(),
                 ParentPlayerID = creation.ParentPlayerId,
+                ParentUsername = database.Users.Where(user => user.UserId == creation.ParentPlayerId)
+                    .Select(user => user.Username).FirstOrDefault(),
                 PlayerID = creation.PlayerId,
+                Username = database.Users.Where(user => user.UserId == creation.PlayerId)
+                    .Select(user => user.Username).FirstOrDefault(),
                 ParentCreationID = creation.ParentCreationId,
+                ParentCreationName = database.PlayerCreations.Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                    .Select(parent => parent.Name).FirstOrDefault(),
                 ModerationStatus = creation.ModerationStatus,
+                CreatedAt = creation.CreatedAt,
                 IsMNR = creation.IsMNR
             })
             .Skip(pageStart)
@@ -495,7 +514,7 @@ namespace GameServer.Implementation.Common
 
             var hotlap = ContentUpdates.ReadHotlapData();
                 if (hotlap != null && hotlap.TrackId == playerCreationID)
-                    ContentUpdates.GetNewHotLap(database);
+                    ContentUpdates.GetNewHotLap(database, storage);
 
             database.PlayerCreationDownloads
                 .Where(x => x.PlayerCreationId == Creation.PlayerCreationId)
@@ -1215,11 +1234,13 @@ namespace GameServer.Implementation.Common
             return hotLap == null ? "error_no_hotlap_file" : hotLap.TrackId.ToString();
         }
         
-        public static string SetHotLap(Database database, int creationID)
-        {
+        public static string SetHotLap(Database database, IUGCStorage storage, int creationID)
+        {    
             var creation = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == creationID);
             
-            if (creation == null)
+            if (creation == null 
+                || creation.ModerationStatus == ModerationStatus.ILLEGAL
+                || creation.ModerationStatus == ModerationStatus.BANNED)
                 return "error_creation_not_found";
             else if (creation.Type != PlayerCreationType.TRACK && creation.Type != PlayerCreationType.STORY)
                 return "error_not_a_track";
@@ -1229,11 +1250,26 @@ namespace GameServer.Implementation.Common
                 return "error_track_no_autoreset";
             else
             {
+                if (ServerConfig.Instance.DeleteCreationData)
+                {
+                    var scores = database.Scores
+                        .Where(x => x.IsMNR
+                            && x.SubGroupId == 700)
+                        .ToList();
+
+                    foreach (var score in scores)
+                        storage.RemoveGhostCarData((GameType)(score.SubGroupId + 10), score.Platform, score.SubKeyId, score.PlayerId);
+                }
+
+                database.Scores.RemoveRange(database.Scores.Where(match => match.SubGroupId == 700 && match.IsMNR).ToList());
+                
+                database.SaveChanges();
+
                 var hotlap = ContentUpdates.ReadHotlapData();
 
                 if (hotlap == null)
                 {
-                    ContentUpdates.GetNewHotLap(database);
+                    ContentUpdates.GetNewHotLap(database, storage);
                     hotlap = ContentUpdates.ReadHotlapData();
                     if (hotlap == null)
                         return "error_no_hotlap_file";
@@ -1257,19 +1293,31 @@ namespace GameServer.Implementation.Common
             
             var queuePage =  hotlap.Queue.Skip(pageStart).Take(per_page).ToList();
 
-            var queue = database.PlayerCreations.Select(creation => new MinimalCreationInfo
+            var queue = database.PlayerCreations.Where(creation => queuePage.Contains(creation.PlayerCreationId))
+                .Select(creation => new MinimalCreationInfo
             {
                 ID = creation.PlayerCreationId,
                 Name = creation.Name,
                 Description = creation.Description,
-                Type = creation.Type,
+                Type = creation.Type.ToString(),
                 OriginalPlayerID = creation.OriginalPlayerId,
+                OriginalUsername = database.Users.Where(user => user.UserId == creation.OriginalPlayerId)
+                    .Select(user => user.Username).FirstOrDefault(),
                 ParentPlayerID = creation.ParentPlayerId,
+                ParentUsername = database.Users.Where(user => user.UserId == creation.ParentPlayerId)
+                    .Select(user => user.Username).FirstOrDefault(),
                 PlayerID = creation.PlayerId,
+                Username = database.Users.Where(user => user.UserId == creation.PlayerId)
+                    .Select(user => user.Username).FirstOrDefault(),
                 ParentCreationID = creation.ParentCreationId,
-                ModerationStatus = creation.ModerationStatus,
-                IsMNR = creation.IsMNR
-            }).Where(match => queuePage.Contains(match.ID)).ToList();
+                ParentCreationName = database.PlayerCreations.Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                    .Select(parent => parent.Name).FirstOrDefault(),
+                CreatedAt = creation.CreatedAt
+            }).ToList();
+
+            queue = queuePage
+                .Join(queue, creationID => creationID, creation => creation.ID, (_, creation) => creation)
+                .ToList();
             
             return JsonConvert.SerializeObject(new ModerationPageResponse<MinimalCreationInfo>
             {
@@ -1278,11 +1326,13 @@ namespace GameServer.Implementation.Common
             });
         }
         
-        public static string AddToHotLapQueue(Database database, int creationID)
+        public static string AddToHotLapQueue(Database database, IUGCStorage storage, int creationID)
         {
             var creation = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == creationID);
             
-            if (creation == null)
+            if (creation == null 
+                || creation.ModerationStatus == ModerationStatus.ILLEGAL
+                || creation.ModerationStatus == ModerationStatus.BANNED)
                 return "error_creation_not_found";
             else if (creation.Type != PlayerCreationType.TRACK && creation.Type != PlayerCreationType.STORY)
                 return "error_not_a_track";
@@ -1296,7 +1346,7 @@ namespace GameServer.Implementation.Common
 
                 if (hotlap == null)
                 {
-                    ContentUpdates.GetNewHotLap(database);
+                    ContentUpdates.GetNewHotLap(database, storage);
                     hotlap = ContentUpdates.ReadHotlapData();
                     if (hotlap == null)
                         return "error_no_hotlap_file";
@@ -1313,13 +1363,13 @@ namespace GameServer.Implementation.Common
             }
         }
         
-        public static string RemoveFromHotLapQueue(Database database, int? index, int? creationID)
+        public static string RemoveFromHotLapQueue(Database database, IUGCStorage storage, int? index, int? creationID)
         {
             var hotlap = ContentUpdates.ReadHotlapData();
 
             if (hotlap == null)
             {
-                ContentUpdates.GetNewHotLap(database);
+                ContentUpdates.GetNewHotLap(database, storage);
                 hotlap = ContentUpdates.ReadHotlapData();
                 if (hotlap == null)
                     return "error_no_hotlap_file";
@@ -1340,7 +1390,7 @@ namespace GameServer.Implementation.Common
             return "ok";
         }
 
-        public static string RemoveHotLapScore(Database database, int scoreId)
+        public static string RemoveHotLapScore(Database database, IUGCStorage storage, int scoreId)
         {
             HotLapData hotlap = ContentUpdates.ReadHotlapData();
             if (hotlap == null)
@@ -1355,6 +1405,7 @@ namespace GameServer.Implementation.Common
             if (score == null)
                 return null;
 
+            storage.RemoveGhostCarData((GameType)(score.SubGroupId + 10), score.Platform, score.SubKeyId, score.PlayerId);
             database.Scores.Remove(score);
             database.SaveChanges();
 

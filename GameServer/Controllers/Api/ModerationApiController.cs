@@ -238,7 +238,7 @@ namespace GameServer.Controllers.Api
             if (user == null || !user.ChangeCreationStatus)
                 return StatusCode(403);
 
-            var result = Moderation.SetModerationStatus(database, id, status);
+            var result = Moderation.SetModerationStatus(database, storage, id, status);
 
             if (result == null)
                 return NotFound();
@@ -811,7 +811,7 @@ namespace GameServer.Controllers.Api
             if (user == null || !user.ManageHotlap)
                 return StatusCode(403);
 
-            return Content(Moderation.SetHotLap(database, creation));
+            return Content(Moderation.SetHotLap(database, storage, creation));
         }
         
         [HttpPost]
@@ -823,7 +823,7 @@ namespace GameServer.Controllers.Api
             if (user == null || !user.ManageHotlap)
                 return StatusCode(403);
 
-            ContentUpdates.GetNewHotLap(database);
+            ContentUpdates.GetNewHotLap(database, storage);
             
             return Content("ok");
         }
@@ -861,7 +861,7 @@ namespace GameServer.Controllers.Api
             if (user == null || !user.ManageHotlap)
                 return StatusCode(403);
 
-            return Content(Moderation.AddToHotLapQueue(database, creation));
+            return Content(Moderation.AddToHotLapQueue(database, storage, creation));
         }
         
         [HttpDelete]
@@ -873,7 +873,7 @@ namespace GameServer.Controllers.Api
             if (user == null || !user.ManageHotlap)
                 return StatusCode(403);
 
-            return Content(Moderation.RemoveFromHotLapQueue(database, index, creation));
+            return Content(Moderation.RemoveFromHotLapQueue(database, storage, index, creation));
         }
 
         [HttpDelete]
@@ -885,7 +885,7 @@ namespace GameServer.Controllers.Api
             if (user == null || !user.ManageHotlap)
                 return StatusCode(403);
 
-            var result = Moderation.RemoveHotLapScore(database, scoreId);
+            var result = Moderation.RemoveHotLapScore(database, storage, scoreId);
 
             if (result == null)
                 return NotFound();

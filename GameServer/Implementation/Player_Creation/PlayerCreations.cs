@@ -1,15 +1,17 @@
 ﻿using GameServer.Models;
+using GameServer.Models.GameBrowser;
 using GameServer.Models.PlayerData;
 using GameServer.Models.Request;
 using GameServer.Models.Response;
+using GameServer.Models.PlayerData.PlayerCreations;
+using GameServer.Models.Config;
 using GameServer.Utils;
+using GameServer.Implementation.Common;
 using System.Collections.Generic;
 using System.Linq;
-using GameServer.Models.PlayerData.PlayerCreations;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
-using GameServer.Models.Config;
 
 namespace GameServer.Implementation.Player_Creation
 {
@@ -313,6 +315,20 @@ namespace GameServer.Implementation.Player_Creation
                 return errorResp.Serialize();
             }
 
+            var hotlap = ContentUpdates.ReadHotlapData();
+            var isCurrentHotLap = hotlap != null && hotlap.TrackId == id;
+
+            if (hotlap?.Queue != null)
+                hotlap.Queue.RemoveAll(creationID => creationID == id);
+
+            if (hotlap != null)
+            {
+                if (isCurrentHotLap)
+                    ContentUpdates.GetNewHotLap(database, storage);
+                else
+                    ContentUpdates.WriteHotlapData(hotlap);
+            }
+
             Creation.Type = PlayerCreationType.DELETED;
 
             foreach (var item in database.PlayerCreations.Where(match => match.TrackId == Creation.PlayerCreationId)
@@ -356,6 +372,22 @@ namespace GameServer.Implementation.Player_Creation
         
             database.ActivityLog
                 .Where(match => match.PlayerCreationId == Creation.PlayerCreationId)
+                .ExecuteDelete();
+
+            if (ServerConfig.Instance.DeleteCreationData){
+                var ghostCarScores = database.Scores
+                    .Where(x => x.SubKeyId == Creation.PlayerCreationId
+                        && x.IsMNR
+                        && x.SubGroupId == 703
+                        && x.GhostCarDataMD5 != null)
+                    .ToList();
+
+                    foreach (var score in ghostCarScores)
+                        storage.RemoveGhostCarData((GameType)(score.SubGroupId + 10), score.Platform, score.SubKeyId, score.PlayerId);
+            }
+
+            database.Scores
+                .Where(x => x.SubKeyId == Creation.PlayerCreationId)
                 .ExecuteDelete();
 
             database.SaveChanges();

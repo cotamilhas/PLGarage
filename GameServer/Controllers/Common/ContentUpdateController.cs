@@ -1,4 +1,5 @@
 ﻿using GameServer.Implementation.Common;
+using GameServer.Models;
 using GameServer.Models.PlayerData;
 using GameServer.Models.Request;
 using GameServer.Utils;
@@ -7,14 +8,14 @@ using System;
 
 namespace GameServer.Controllers.Common
 {
-    public class ContentUpdateController(Database database) : Controller
+    public class ContentUpdateController(Database database, IUGCStorage storage) : Controller
     {
         [HttpGet]
         [Route("content_updates/latest.xml")]
         public IActionResult Latest(Platform platform, ContentUpdateType content_update_type)
         {
             string serverURL = UserGeneratedContentUtils.GetCDNURL(Request);
-            return Content(ContentUpdates.GetLatest(database, platform, content_update_type, serverURL), "application/xml;charset=utf-8");
+            return Content(ContentUpdates.GetLatest(database, storage, platform, content_update_type, serverURL), "application/xml;charset=utf-8");
         }
 
         [HttpGet]

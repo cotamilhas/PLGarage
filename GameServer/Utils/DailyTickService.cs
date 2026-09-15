@@ -1,4 +1,5 @@
 ﻿using GameServer.Implementation.Common;
+using GameServer.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -7,10 +8,11 @@ using System.Threading.Tasks;
 
 namespace GameServer.Utils
 {
-    public class DailyTickService(ILogger<DailyTickService> logger) : IHostedService, IDisposable
+    public class DailyTickService(ILogger<DailyTickService> logger, IUGCStorage storage) : IHostedService, IDisposable
     {
         private readonly ILogger<DailyTickService> Logger = logger;
         private Timer Timer;
+        private readonly IUGCStorage Storage = storage;
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -28,7 +30,7 @@ namespace GameServer.Utils
             try
             {
                 var database = new Database();
-                ContentUpdates.GetNewHotLap(database);
+                ContentUpdates.GetNewHotLap(database, Storage);
                 database.Dispose();
             }
             catch (Exception e)
