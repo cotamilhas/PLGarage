@@ -26,70 +26,48 @@ namespace GameServer.Controllers.Api
             return Json(new
             {
                 item.PlayerCreationId,
-                item.AssociatedUsernames,
-                item.TrackId,
-                AuthorUsername = item.Author.Username,
+                item.Name,
+                item.Description,
+                creatorUsername = item.Author.Username,
                 item.ModerationStatus,
                 item.CreatedAt
             });
         }
 
         [HttpGet]
-        [Route("/api/items/username/{username}")]
-        public IActionResult GetItemsByUsername(string username, int page = 1, int perPage = 10, SortOrder? sortOrder = null)
-        {
-            if (page < 1) page = 1;
-            if (perPage < 1) perPage = 10;
-            if (perPage > 10) perPage = 10;
-
-            var query = database.PlayerCreations
-                .AsNoTracking()
-                .Where(c => c.Type == PlayerCreationType.ITEM 
-                && c.Author.Username == username
-                && c.ModerationStatus != ModerationStatus.BANNED
-                && c.ModerationStatus != ModerationStatus.ILLEGAL);
-
-            var total = query.Count();
-            var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
-                ? query.OrderBy(p => p.CreatedAt)
-                : query.OrderByDescending(p => p.CreatedAt);
-
-            if (total == 0)
-                return NotFound(new { error = "error_items_not_found"});
-
-            var items = orderedQuery
-                .Skip((page - 1) * perPage)
-                .Take(perPage)
-                .Select(c => new
-                {
-                    c.PlayerCreationId,
-                    c.AssociatedUsernames,
-                    c.TrackId,
-                    c.CreatedAt
-                })
-                .ToList();
-
-            return Json(new { total, items });
-        }
-        [HttpGet]
         [Route("/api/items")]
-        public IActionResult GetItems(int page = 1, int perPage = 10, SortOrder? sortOrder = null)
+        public IActionResult GetItems(
+            string query,
+            string username = null, 
+            int page = 1, int perPage = 10, 
+            SortOrder? sortOrder = null)
         {
             if (page < 1) page = 1;
             if (perPage < 1) perPage = 10;
             if (perPage > 10) perPage = 10;
 
-            var query = database.PlayerCreations
+            var q = database.PlayerCreations
                 .AsNoTracking()
                 .Where(c => c.Type == PlayerCreationType.ITEM
                 && c.ModerationStatus != ModerationStatus.BANNED
                 && c.ModerationStatus != ModerationStatus.ILLEGAL);
 
-            var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
-                ? query.OrderBy(p => p.CreatedAt)
-                : query.OrderByDescending(p => p.CreatedAt);
+            if (!string.IsNullOrWhiteSpace(query))
+                q = q.Where(c => c.Name.Contains(query));
 
-            var total = query.Count();
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                if (!database.Users.AsNoTracking().Any(u => u.Username == username))
+                    return NotFound(new { error = "error_items_not_found_for_user" });
+
+                q = q.Where(c => c.Author.Username == username);
+            }
+
+            var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
+                ? q.OrderBy(p => p.CreatedAt)
+                : q.OrderByDescending(p => p.CreatedAt);
+
+            var total = q.Count();
 
             if (total == 0)
                 return NotFound(new { error = "error_items_not_found" });
@@ -100,8 +78,9 @@ namespace GameServer.Controllers.Api
                 .Select(c => new
                 {
                     c.PlayerCreationId,
-                    c.AssociatedUsernames,
-                    c.TrackId,
+                    c.Name,
+                    c.Description,
+                    creatorUsername = c.Author.Username,
                     c.CreatedAt
                 })
                 .ToList();

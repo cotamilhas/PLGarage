@@ -180,6 +180,7 @@ namespace GameServer.Controllers.Api
                 && x.Type != PlayerCreationType.STORY
                 && x.Type != PlayerCreationType.PHOTO
                 && x.Type != PlayerCreationType.PLANET
+                && x.Type != PlayerCreationType.ITEM
                 && x.ModerationStatus != ModerationStatus.BANNED
                 && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
@@ -511,8 +512,6 @@ namespace GameServer.Controllers.Api
                 .Where(x => x.Platform == platform
                     && !x.IsMNR
                     && x.Type == PlayerCreationType.TRACK
-                    && x.Type != PlayerCreationType.DELETED
-                    && x.Type != PlayerCreationType.STORY
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
@@ -621,8 +620,6 @@ namespace GameServer.Controllers.Api
                 .Where(x => x.Platform == platform
                     && x.IsMNR
                     && x.Type == playerCreationType
-                    && x.Type != PlayerCreationType.DELETED
-                    && x.Type != PlayerCreationType.STORY
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 

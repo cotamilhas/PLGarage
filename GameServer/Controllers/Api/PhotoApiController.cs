@@ -35,102 +35,39 @@ namespace GameServer.Controllers.Api
         }
 
         [HttpGet]
-        [Route("/api/photos/username/{username}")]
-        public IActionResult GetPhotosByUsername(string username, int page = 1, int perPage = 10, SortOrder? sortOrder = null)
-        {
-            if (page < 1) page = 1;
-            if (perPage < 1) perPage = 10;
-            if (perPage > 10) perPage = 10;
-
-            var query = database.PlayerCreations
-                .AsNoTracking()
-                .Where(c => c.Type == PlayerCreationType.PHOTO 
-                && c.Author.Username == username
-                && c.ModerationStatus != ModerationStatus.BANNED
-                && c.ModerationStatus != ModerationStatus.ILLEGAL);
-
-            var total = query.Count();
-
-            if (total == 0)
-                return NotFound(new { error = "error_photos_not_found"});
-
-            var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
-                ? query.OrderBy(p => p.CreatedAt)
-                : query.OrderByDescending(p => p.CreatedAt);
-
-            var photos = orderedQuery
-                .Skip((page - 1) * perPage)
-                .Take(perPage)
-                .Select(c => new
-                {
-                    c.PlayerCreationId,
-                    c.AssociatedUsernames,
-                    c.TrackId,
-                    c.CreatedAt
-                })
-                .ToList();
-
-            return Json(new { total, photos });
-        }
-
-        [HttpGet]
-        [Route("/api/photos/track/{trackId}")]
-        public IActionResult GetPhotosByTrackId(int trackId, int page = 1, int perPage = 10, SortOrder? sortOrder = null)
-        {
-            if (page < 1) page = 1;
-            if (perPage < 1) perPage = 10;
-            if (perPage > 10) perPage = 10;
-
-            var query = database.PlayerCreations
-                .AsNoTracking()
-                .Where(c => c.Type == PlayerCreationType.PHOTO 
-                && c.TrackId == trackId
-                && c.ModerationStatus != ModerationStatus.BANNED
-                && c.ModerationStatus != ModerationStatus.ILLEGAL);
-
-            var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
-                ? query.OrderBy(p => p.CreatedAt)
-                : query.OrderByDescending(p => p.CreatedAt);
-
-            var total = query.Count();
-
-            if (total == 0)
-                return NotFound(new { error = "error_photos_not_found", trackId });
-
-            var photos = orderedQuery
-                .Skip((page - 1) * perPage)
-                .Take(perPage)
-                .Select(c => new
-                {
-                    c.PlayerCreationId,
-                    c.AssociatedUsernames,
-                    AuthorUsername = c.Author.Username,
-                    c.CreatedAt
-                })
-                .ToList();
-
-            return Json(new { total, photos });
-        }
-
-        [HttpGet]
         [Route("/api/photos")]
-        public IActionResult GetPhotos(int page = 1, int perPage = 10, SortOrder? sortOrder = null)
+        public IActionResult GetPhotos(
+            string username = null,
+            int? trackId = null,
+            int page = 1,
+            int perPage = 10,
+            SortOrder? sortOrder = null)
         {
             if (page < 1) page = 1;
-            if (perPage < 1) perPage = 10;
-            if (perPage > 10) perPage = 10;
+            if (perPage < 1 || perPage > 10) perPage = 10;
 
-            var query = database.PlayerCreations
+            var q = database.PlayerCreations
                 .AsNoTracking()
                 .Where(c => c.Type == PlayerCreationType.PHOTO
                 && c.ModerationStatus != ModerationStatus.BANNED
                 && c.ModerationStatus != ModerationStatus.ILLEGAL);
 
-            var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
-                ? query.OrderBy(p => p.CreatedAt)
-                : query.OrderByDescending(p => p.CreatedAt);
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                if (!database.Users.AsNoTracking().Any(u => u.Username == username))
+                    return NotFound(new { error = "error_photos_not_found_for_user" });
 
-            var total = query.Count();
+                q = q.Where(c => c.Author.Username == username);
+            }
+
+            if (trackId.HasValue)
+                q = q.Where(c => c.TrackId == trackId.Value);
+
+            var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
+                ? q.OrderBy(p => p.CreatedAt)
+                : q.OrderByDescending(p => p.CreatedAt);
+
+            var total = q.Count();
 
             if (total == 0)
                 return NotFound(new { error = "error_photos_not_found" });
@@ -143,7 +80,7 @@ namespace GameServer.Controllers.Api
                     c.PlayerCreationId,
                     c.AssociatedUsernames,
                     c.TrackId,
-                    AuthorUsername = c.Author.Username,
+                    takenBy = c.Author.Username,
                     c.CreatedAt
                 })
                 .ToList();
