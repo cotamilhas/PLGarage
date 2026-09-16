@@ -1157,6 +1157,16 @@ namespace GameServer.Implementation.Common
         #endregion
 
         #region Announcements
+        public static string GetAnnouncement(Database database, int id)
+        {
+            var announcement = database.Announcements.FirstOrDefault(match => match.Id == id);
+
+            if (announcement == null)
+                return null;
+
+            return JsonConvert.SerializeObject(announcement);
+        }
+
         public static string GetAnnouncements(Database database, int page, int per_page, Platform? platform, SortOrder? sortOrder)
         {
             if (page <= 0)
