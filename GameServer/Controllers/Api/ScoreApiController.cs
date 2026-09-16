@@ -33,7 +33,7 @@ namespace GameServer.Controllers.Api
                 .Include(c => c.Author)
                 .Include(c => c.Ratings)
                 .FirstOrDefault(c => c.PlayerCreationId == trackId
-                    && c.Type != PlayerCreationType.DELETED
+                    && c.Type == PlayerCreationType.TRACK
                     && c.ModerationStatus != ModerationStatus.BANNED
                     && c.ModerationStatus != ModerationStatus.ILLEGAL);
 
