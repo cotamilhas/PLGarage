@@ -1349,7 +1349,7 @@ namespace GameServer.Implementation.Common
                     && s.SubKeyId == hotlap.TrackId);
 
             if (score == null)
-                return "error_score_not_found";
+                return null;
 
             database.Scores.Remove(score);
             database.SaveChanges();
