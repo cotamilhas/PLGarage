@@ -265,7 +265,7 @@ namespace GameServer.Implementation.Common
                                                     character.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > character.LongestHangTime)
                                                     character.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > character.BestLapTime)
+                                                if (player.BestLapTime > 0 && (character.BestLapTime <= 0 || player.BestLapTime < character.BestLapTime))
                                                     character.BestLapTime = player.BestLapTime;
                                             }
 
@@ -279,8 +279,8 @@ namespace GameServer.Implementation.Common
                                                     kart.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > kart.LongestHangTime)
                                                     kart.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > kart.BestLapTime)
-                                                    kart.BestLapTime = player.BestLapTime;
+                                                if (player.BestLapTime > 0 && (character.BestLapTime <= 0 || player.BestLapTime < character.BestLapTime))
+                                                    character.BestLapTime = player.BestLapTime;
                                             }
                                         }
 
@@ -304,7 +304,7 @@ namespace GameServer.Implementation.Common
                                             creation.LongestDrift = player.BestDrift;
                                         if (player.BestHangTime > creation.LongestHangTime)
                                             creation.LongestHangTime = player.BestHangTime;
-                                        if (player.BestLapTime > creation.BestLapTime)
+                                        if (player.BestLapTime > 0 && (creation.BestLapTime <= 0 || player.BestLapTime < creation.BestLapTime))
                                             creation.BestLapTime = player.BestLapTime;
 
                                         if (player.Finished) 
