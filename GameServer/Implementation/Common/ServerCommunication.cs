@@ -408,7 +408,7 @@ namespace GameServer.Implementation.Common
                                                     FinishTime = player.FinishTime,
                                                     Platform = creation.Platform,
                                                     PlayerId = player.PlayerConnectId,
-                                                    PlaygroupSize = player.PlaygroupSize,
+                                                    PlaygroupSize = info.IsMNR ? 0 : player.PlaygroupSize,
                                                     Points = player.Points,
                                                     SubGroupId = info.IsMNR ? (int)info.GameType - 10 : (int)info.GameType,
                                                     SubKeyId = info.TrackId,
