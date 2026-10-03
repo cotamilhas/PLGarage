@@ -94,7 +94,7 @@ namespace GameServer.Controllers.Api
                     x.Tags,
                     x.Platform,
                     x.IsMNR,
-                    x.ModerationStatus,
+                    ModerationStatus = x.ModerationStatus == 0 ? "APPROVED" : x.ModerationStatus.ToString(),
                     x.CreatedAt,
                     pointsAllTime = x.Points.Sum(p => p.Amount),
                     pointsThisWeek = x.Points.Where(p => p.CreatedAt >= TimeUtils.ThisWeekStart).Sum(p => p.Amount),
@@ -485,21 +485,21 @@ namespace GameServer.Controllers.Api
         [Route("/api/topmods")]
         public IActionResult GetTopMods([FromQuery] Platform platform = Platform.PS3)
         {
-            return JsonTopCreations(PlayerCreationType.CHARACTER, platform);
+            return TopCreations(PlayerCreationType.CHARACTER, platform);
         }
 
         [HttpGet]
         [Route("/api/topkarts")]
         public IActionResult GetTopKarts([FromQuery] Platform platform = Platform.PS3)
         {
-            return JsonTopCreations(PlayerCreationType.KART, platform);
+            return TopCreations(PlayerCreationType.KART, platform);
         }
 
         [HttpGet]
         [Route("/api/toptracks")]
         public IActionResult GetTopTracks([FromQuery] Platform platform = Platform.PS3)
         {
-            return JsonTopCreations(PlayerCreationType.TRACK, platform);
+            return TopCreations(PlayerCreationType.TRACK, platform);
         }
 
         [HttpGet]
@@ -612,7 +612,7 @@ namespace GameServer.Controllers.Api
             });
         }
 
-        private IActionResult JsonTopCreations(
+        private IActionResult TopCreations(
             PlayerCreationType playerCreationType,
             Platform platform)
         {
@@ -626,7 +626,7 @@ namespace GameServer.Controllers.Api
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
-            query = query.OrderByDescending(x => x.PointsToday);
+            query = query.OrderByDescending(x => x.PointsYesterday);
 
             var total = query.Count();
 
@@ -644,7 +644,7 @@ namespace GameServer.Controllers.Api
                     x.Tags,
                     x.CreatedAt,
                     x.UpdatedAt,
-                    pointsToday = x.PointsToday,
+                    pointsYesterday = x.PointsYesterday,
                     points = x.PointsAmount,
                     pointsThisWeek = x.PointsThisWeek,
                     pointsLastWeek = x.PointsLastWeek,
@@ -689,7 +689,7 @@ namespace GameServer.Controllers.Api
                 x.longestHangTime,
                 points = new
                 {
-                    today = x.pointsToday,
+                    yesterday = x.pointsYesterday,
                     all_time = x.points,
                     this_week = x.pointsThisWeek,
                     last_week = x.pointsLastWeek
