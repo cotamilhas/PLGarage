@@ -431,14 +431,14 @@ namespace GameServer.Implementation.Common
 
                 if (score != null)
                 {
-                    if (stats.finish_time > 0 && (score.FinishTime <= 0 || stats.finish_time < score.FinishTime))
+                    if (score.FinishTime > stats.finish_time)
                     {
                         score.FinishTime = stats.finish_time;
                         score.UpdatedAt = TimeUtils.Now;
                         score.CharacterIdx = stats.character_idx;
                         score.KartIdx = stats.kart_idx;
                     }
-                    if (stats.best_lap_time > 0 && (score.BestLapTime <= 0 || stats.best_lap_time < score.BestLapTime))
+                    if (score.BestLapTime > stats.best_lap_time)
                     {
                         score.BestLapTime = stats.best_lap_time;
                         score.UpdatedAt = TimeUtils.Now;
@@ -446,7 +446,7 @@ namespace GameServer.Implementation.Common
                         score.KartIdx = stats.kart_idx;
                     }
                 }
-                else if (!session.IsMNR || (stats.finish_time > 0 && stats.best_lap_time > 0))
+                else
                 {
                     database.Scores.Add(new Score
                     {
