@@ -296,7 +296,7 @@ namespace GameServer.Controllers.Common
 
             if (score != null)
             {               
-                if (score.FinishTime > game_player_stats.finish_time)
+                if (game_player_stats.finish_time > 0 && (score.FinishTime <= 0 || game_player_stats.finish_time < score.FinishTime))
                 {
                     score.FinishTime = game_player_stats.finish_time;
                     score.UpdatedAt = TimeUtils.Now;
@@ -309,7 +309,7 @@ namespace GameServer.Controllers.Common
                     score.Points = game_player_stats.score;
                     score.UpdatedAt = TimeUtils.Now;
                 }
-                if (score.BestLapTime > game_player_stats.best_lap_time)
+                if (game_player_stats.best_lap_time > 0 && (score.BestLapTime <= 0 || game_player_stats.best_lap_time < score.BestLapTime))
                 {
                     score.BestLapTime = game_player_stats.best_lap_time;
                     score.UpdatedAt = TimeUtils.Now;
@@ -320,7 +320,7 @@ namespace GameServer.Controllers.Common
                 if (SaveGhost)
                     score.GhostCarDataMD5 = GhostDataMD5;
             }
-            else
+            else if (!session.IsMNR || (game_player_stats.finish_time > 0 && game_player_stats.best_lap_time > 0))
             {
                 if (session.IsMNR && game.game_type == GameType.ONLINE_HOT_SEAT_RACE && game.track_idx != hotlap.TrackId)
                     game.game_type = GameType.ONLINE_TIME_TRIAL_RACE;

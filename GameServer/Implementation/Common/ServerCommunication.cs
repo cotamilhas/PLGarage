@@ -265,7 +265,7 @@ namespace GameServer.Implementation.Common
                                                     character.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > character.LongestHangTime)
                                                     character.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > character.BestLapTime)
+                                                if (player.BestLapTime > 0 && (character.BestLapTime <= 0 || player.BestLapTime < character.BestLapTime))
                                                     character.BestLapTime = player.BestLapTime;
                                             }
 
@@ -279,8 +279,8 @@ namespace GameServer.Implementation.Common
                                                     kart.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > kart.LongestHangTime)
                                                     kart.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > kart.BestLapTime)
-                                                    kart.BestLapTime = player.BestLapTime;
+                                                if (player.BestLapTime > 0 && (character.BestLapTime <= 0 || player.BestLapTime < character.BestLapTime))
+                                                    character.BestLapTime = player.BestLapTime;
                                             }
                                         }
 
@@ -304,7 +304,7 @@ namespace GameServer.Implementation.Common
                                             creation.LongestDrift = player.BestDrift;
                                         if (player.BestHangTime > creation.LongestHangTime)
                                             creation.LongestHangTime = player.BestHangTime;
-                                        if (player.BestLapTime > creation.BestLapTime)
+                                        if (player.BestLapTime > 0 && (creation.BestLapTime <= 0 || player.BestLapTime < creation.BestLapTime))
                                             creation.BestLapTime = player.BestLapTime;
 
                                         if (player.Finished) 
@@ -380,7 +380,7 @@ namespace GameServer.Implementation.Common
 
                                             if (score != null)
                                             {
-                                                if (score.FinishTime > player.FinishTime)
+                                                if (player.FinishTime > 0 && (score.FinishTime <= 0 || player.FinishTime < score.FinishTime))
                                                 {
                                                     score.FinishTime = player.FinishTime;
                                                     score.UpdatedAt = TimeUtils.Now;
@@ -392,7 +392,7 @@ namespace GameServer.Implementation.Common
                                                     score.Points = player.Points;
                                                     score.UpdatedAt = TimeUtils.Now;
                                                 }
-                                                if (score.BestLapTime > player.BestLapTime)
+                                                if (player.BestLapTime > 0 && (score.BestLapTime <= 0 || player.BestLapTime < score.BestLapTime))
                                                 {
                                                     score.BestLapTime = player.BestLapTime;
                                                     score.UpdatedAt = TimeUtils.Now;
@@ -400,7 +400,7 @@ namespace GameServer.Implementation.Common
                                                     score.KartIdx = user.KartIdx;
                                                 }
                                             }
-                                            else
+                                            else if (!info.IsMNR || (player.FinishTime > 0 && player.BestLapTime > 0))
                                             {
                                                 database.Scores.Add(new Score
                                                 {
