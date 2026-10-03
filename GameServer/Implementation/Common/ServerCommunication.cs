@@ -380,7 +380,7 @@ namespace GameServer.Implementation.Common
 
                                             if (score != null)
                                             {
-                                                if (player.FinishTime > 0 && (score.FinishTime <= 0 || player.FinishTime < score.FinishTime))
+                                                if (score.FinishTime > player.FinishTime)
                                                 {
                                                     score.FinishTime = player.FinishTime;
                                                     score.UpdatedAt = TimeUtils.Now;
@@ -392,7 +392,7 @@ namespace GameServer.Implementation.Common
                                                     score.Points = player.Points;
                                                     score.UpdatedAt = TimeUtils.Now;
                                                 }
-                                                if (player.BestLapTime > 0 && (score.BestLapTime <= 0 || player.BestLapTime < score.BestLapTime))
+                                                if (score.BestLapTime > player.BestLapTime)
                                                 {
                                                     score.BestLapTime = player.BestLapTime;
                                                     score.UpdatedAt = TimeUtils.Now;
@@ -400,7 +400,7 @@ namespace GameServer.Implementation.Common
                                                     score.KartIdx = user.KartIdx;
                                                 }
                                             }
-                                            else if (!info.IsMNR || (player.FinishTime > 0 && player.BestLapTime > 0))
+                                            else
                                             {
                                                 database.Scores.Add(new Score
                                                 {
@@ -408,7 +408,7 @@ namespace GameServer.Implementation.Common
                                                     FinishTime = player.FinishTime,
                                                     Platform = creation.Platform,
                                                     PlayerId = player.PlayerConnectId,
-                                                    PlaygroupSize = player.PlaygroupSize,
+                                                    PlaygroupSize = info.IsMNR ? 0 : player.PlaygroupSize,
                                                     Points = player.Points,
                                                     SubGroupId = info.IsMNR ? (int)info.GameType - 10 : (int)info.GameType,
                                                     SubKeyId = info.TrackId,
