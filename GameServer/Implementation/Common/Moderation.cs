@@ -408,11 +408,24 @@ namespace GameServer.Implementation.Common
                 ID = creation.PlayerCreationId,
                 Name = creation.Name,
                 Description = creation.Description,
-                Type = creation.Type,
+                Type = creation.Type.ToString(),
                 OriginalPlayerID = creation.OriginalPlayerId,
+                OriginalUsername = database.Users
+                    .Where(user => user.UserId == creation.OriginalPlayerId)
+                    .Select(user => user.Username)
+                    .FirstOrDefault(),
                 ParentPlayerID = creation.ParentPlayerId,
+                ParentUsername = database.Users
+                    .Where(user => user.UserId == creation.ParentPlayerId)
+                    .Select(user => user.Username)
+                    .FirstOrDefault(),
                 PlayerID = creation.PlayerId,
+                Username = creation.Author.Username,
                 ParentCreationID = creation.ParentCreationId,
+                ParentCreationName = database.PlayerCreations
+                    .Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                    .Select(parent => parent.Name)
+                    .FirstOrDefault(),
                 ModerationStatus = creation.ModerationStatus,
                 IsMNR = creation.IsMNR
             })
@@ -1283,11 +1296,24 @@ namespace GameServer.Implementation.Common
                     ID = creation.PlayerCreationId,
                     Name = creation.Name,
                     Description = creation.Description,
-                    Type = creation.Type,
+                    Type = creation.Type.ToString(),
                     OriginalPlayerID = creation.OriginalPlayerId,
+                    OriginalUsername = database.Users
+                        .Where(user => user.UserId == creation.OriginalPlayerId)
+                        .Select(user => user.Username)
+                        .FirstOrDefault(),
                     ParentPlayerID = creation.ParentPlayerId,
+                    ParentUsername = database.Users
+                        .Where(user => user.UserId == creation.ParentPlayerId)
+                        .Select(user => user.Username)
+                        .FirstOrDefault(),
                     PlayerID = creation.PlayerId,
                     ParentCreationID = creation.ParentCreationId,
+                    ParentCreationName = database.PlayerCreations
+                        .Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                        .Select(parent => parent.Name)
+                        .FirstOrDefault(),
+                    Username = creation.Author.Username,
                     ModerationStatus = creation.ModerationStatus,
                     IsMNR = creation.IsMNR
                 })
