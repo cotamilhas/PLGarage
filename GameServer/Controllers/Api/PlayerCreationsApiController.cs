@@ -176,10 +176,9 @@ namespace GameServer.Controllers.Api
 
             var q = database.PlayerCreations
                 .AsNoTracking()
-                .Where(x => x.Type != PlayerCreationType.DELETED 
-                && x.Type != PlayerCreationType.STORY
-                && x.Type != PlayerCreationType.PHOTO
-                && x.Type != PlayerCreationType.PLANET
+                .Where(x => x.Type == PlayerCreationType.CHARACTER
+                && x.Type == PlayerCreationType.KART
+                && x.Type == PlayerCreationType.TRACK
                 && x.ModerationStatus != ModerationStatus.BANNED
                 && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
@@ -305,10 +304,9 @@ namespace GameServer.Controllers.Api
             var q = database.PlayerCreations
                 .AsNoTracking()
                 .Where(x => x.Author.Username == username
-                && x.Type != PlayerCreationType.DELETED
-                && x.Type != PlayerCreationType.PHOTO
-                && x.Type != PlayerCreationType.PLANET
-                && x.Type != PlayerCreationType.ITEM
+                && x.Type == PlayerCreationType.CHARACTER
+                && x.Type == PlayerCreationType.KART
+                && x.Type == PlayerCreationType.TRACK
                 && x.ModerationStatus != ModerationStatus.BANNED
                 && x.ModerationStatus != ModerationStatus.ILLEGAL
                 && (!isMnr.HasValue || x.IsMNR == isMnr.Value));
@@ -511,8 +509,6 @@ namespace GameServer.Controllers.Api
                 .Where(x => x.Platform == platform
                     && !x.IsMNR
                     && x.Type == PlayerCreationType.TRACK
-                    && x.Type != PlayerCreationType.DELETED
-                    && x.Type != PlayerCreationType.STORY
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
@@ -572,11 +568,7 @@ namespace GameServer.Controllers.Api
             var query = database.PlayerCreations
                 .AsNoTracking()
                 .Where(x => x.IsTeamPick
-                    && x.Type != PlayerCreationType.DELETED
-                    && x.Type != PlayerCreationType.STORY
-                    && x.Type != PlayerCreationType.PHOTO
-                    && x.Type != PlayerCreationType.PLANET
-                    && x.Type != PlayerCreationType.ITEM
+                    && x.Type == PlayerCreationType.TRACK
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
