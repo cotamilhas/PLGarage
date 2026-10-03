@@ -408,11 +408,24 @@ namespace GameServer.Implementation.Common
                 ID = creation.PlayerCreationId,
                 Name = creation.Name,
                 Description = creation.Description,
-                Type = creation.Type,
+                Type = creation.Type.ToString(),
                 OriginalPlayerID = creation.OriginalPlayerId,
+                OriginalUsername = database.Users
+                    .Where(user => user.UserId == creation.OriginalPlayerId)
+                    .Select(user => user.Username)
+                    .FirstOrDefault(),
                 ParentPlayerID = creation.ParentPlayerId,
+                ParentUsername = database.Users
+                    .Where(user => user.UserId == creation.ParentPlayerId)
+                    .Select(user => user.Username)
+                    .FirstOrDefault(),
                 PlayerID = creation.PlayerId,
+                Username = creation.Author.Username,
                 ParentCreationID = creation.ParentCreationId,
+                ParentCreationName = database.PlayerCreations
+                    .Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                    .Select(parent => parent.Name)
+                    .FirstOrDefault(),
                 ModerationStatus = creation.ModerationStatus,
                 IsMNR = creation.IsMNR
             })
@@ -715,7 +728,13 @@ namespace GameServer.Implementation.Common
             database.AwardUnlocks.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
             database.HeartedPlayerCreations.Where(x => x.UserId == targetUserId).ExecuteDelete();
             database.PlayerCreationBookmarks.Where(x => x.UserId == targetUserId).ExecuteDelete();
-            database.HeartedProfiles.Where(x => x.UserId == targetUserId || x.HeartedUserId == targetUserId).ExecuteDelete();
+            database.HeartedProfiles.Where(x => x.UserId == targetUserId 
+                && x.HeartedUserId == targetUserId)
+                .ExecuteDelete();
+            database.PlayerRatings.Where(x => x.AuthorId == targetUserId 
+                && x.PlayerId == targetUserId)
+                .ExecuteDelete();
+            database.PlayerCreationRatings.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
 
             database.ActivityLog.Where(match => match.AuthorId == user.UserId 
                 || match.PlayerId == user.UserId).ExecuteDelete();
@@ -1132,6 +1151,16 @@ namespace GameServer.Implementation.Common
         #endregion
 
         #region Announcements
+        public static string GetAnnouncement(Database database, int id)
+        {
+            var announcement = database.Announcements.FirstOrDefault(match => match.Id == id);
+
+            if (announcement == null)
+                return null;
+
+            return JsonConvert.SerializeObject(announcement);
+        }
+
         public static string GetAnnouncements(Database database, int page, int per_page, Platform? platform, SortOrder? sortOrder)
         {
             if (page <= 0)
@@ -1267,11 +1296,24 @@ namespace GameServer.Implementation.Common
                     ID = creation.PlayerCreationId,
                     Name = creation.Name,
                     Description = creation.Description,
-                    Type = creation.Type,
+                    Type = creation.Type.ToString(),
                     OriginalPlayerID = creation.OriginalPlayerId,
+                    OriginalUsername = database.Users
+                        .Where(user => user.UserId == creation.OriginalPlayerId)
+                        .Select(user => user.Username)
+                        .FirstOrDefault(),
                     ParentPlayerID = creation.ParentPlayerId,
+                    ParentUsername = database.Users
+                        .Where(user => user.UserId == creation.ParentPlayerId)
+                        .Select(user => user.Username)
+                        .FirstOrDefault(),
                     PlayerID = creation.PlayerId,
                     ParentCreationID = creation.ParentCreationId,
+                    ParentCreationName = database.PlayerCreations
+                        .Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                        .Select(parent => parent.Name)
+                        .FirstOrDefault(),
+                    Username = creation.Author.Username,
                     ModerationStatus = creation.ModerationStatus,
                     IsMNR = creation.IsMNR
                 })
@@ -1363,7 +1405,10 @@ namespace GameServer.Implementation.Common
         {
             var score = database.Scores
                 .FirstOrDefault(s => s.Id == scoreId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701));
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701));
 
             if (score == null)
                 return null;
@@ -1381,7 +1426,10 @@ namespace GameServer.Implementation.Common
         {
             var scores = database.Scores
                 .Where(s => s.SubKeyId == trackId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701))
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701))
                 .ToList();
 
             if (!scores.Any())
@@ -1400,7 +1448,10 @@ namespace GameServer.Implementation.Common
         {
             var scores = database.Scores
                 .Where(s => s.PlayerId == playerId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701))
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701))
                 .ToList();
 
             if (!scores.Any())
