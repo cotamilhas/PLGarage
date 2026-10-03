@@ -728,11 +728,13 @@ namespace GameServer.Implementation.Common
             database.AwardUnlocks.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
             database.HeartedPlayerCreations.Where(x => x.UserId == targetUserId).ExecuteDelete();
             database.PlayerCreationBookmarks.Where(x => x.UserId == targetUserId).ExecuteDelete();
-            database.HeartedProfiles.Where(x => x.UserId == targetUserId 
-                && x.HeartedUserId == targetUserId)
+            database.HeartedProfiles
+                .Where(x => x.UserId == targetUserId
+                        || x.HeartedUserId == targetUserId)
                 .ExecuteDelete();
-            database.PlayerRatings.Where(x => x.AuthorId == targetUserId 
-                && x.PlayerId == targetUserId)
+            database.PlayerRatings
+                .Where(x => x.AuthorId == targetUserId
+                        || x.PlayerId == targetUserId)
                 .ExecuteDelete();
             database.PlayerCreationRatings.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
 

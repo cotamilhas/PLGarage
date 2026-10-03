@@ -224,8 +224,10 @@ namespace GameServer.Controllers.Api
 
             var query = database.HeartedProfiles
                 .AsNoTracking()
-                .Where(x => x.UserId == player.UserId)
-                .Where(x => isMnr == true ? x.IsMNR : !x.IsMNR);
+                .Where(x => x.UserId == player.UserId);
+
+            if (isMnr.HasValue)
+                query = query.Where(x => x.IsMNR == isMnr.Value);
 
             var total = query.Count();
             var orderedQuery = ((sortOrder ?? SortOrder.desc) == SortOrder.asc)
@@ -239,7 +241,8 @@ namespace GameServer.Controllers.Api
                 {
                     x.HeartedUserId,
                     x.HeartedUser.Username,
-                    x.HeartedAt
+                    x.HeartedAt,
+                    x.IsMNR
                 })
                 .ToList();
 
