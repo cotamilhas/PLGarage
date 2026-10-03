@@ -81,7 +81,9 @@ namespace GameServer.Controllers.Api
                     x.IsBanned,
                     x.CreatedAt,
                     creationTypes = x.PlayerCreations
-                        .Where(c => c.Type != PlayerCreationType.DELETED)
+                        .Where(c => c.Type != PlayerCreationType.DELETED
+                            && c.ModerationStatus != ModerationStatus.BANNED 
+                            && c.ModerationStatus != ModerationStatus.ILLEGAL)
                         .Select(c => new { c.Type, c.IsMNR, c.Platform })
                         .ToList()
                 })
