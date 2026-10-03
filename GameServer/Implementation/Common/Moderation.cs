@@ -1373,7 +1373,10 @@ namespace GameServer.Implementation.Common
         {
             var score = database.Scores
                 .FirstOrDefault(s => s.Id == scoreId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701));
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701));
 
             if (score == null)
                 return null;
@@ -1391,7 +1394,10 @@ namespace GameServer.Implementation.Common
         {
             var scores = database.Scores
                 .Where(s => s.SubKeyId == trackId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701))
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701))
                 .ToList();
 
             if (!scores.Any())
@@ -1410,7 +1416,10 @@ namespace GameServer.Implementation.Common
         {
             var scores = database.Scores
                 .Where(s => s.PlayerId == playerId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701))
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701))
                 .ToList();
 
             if (!scores.Any())
