@@ -286,8 +286,8 @@ namespace GameServer.Implementation.Common
                                                     kart.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > kart.LongestHangTime)
                                                     kart.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > 0 && (character.BestLapTime <= 0 || player.BestLapTime < character.BestLapTime))
-                                                    character.BestLapTime = player.BestLapTime;
+                                                if (player.BestLapTime > 0 && (kart.BestLapTime <= 0 || player.BestLapTime < kart.BestLapTime))
+                                                    kart.BestLapTime = player.BestLapTime;
                                             }
                                         }
 
