@@ -104,7 +104,11 @@ namespace GameServer.Implementation.Common
                         break;
                     }
                 }
-                else break;
+                else
+                {
+                    Log.Warning($"Unexpected {result.MessageType} message from server {ServerID}, closing its connection");
+                    break;
+                }
 
                 try
                 {
@@ -122,8 +126,8 @@ namespace GameServer.Implementation.Common
                     Log.Debug($"Failed to process message: {e}");
                 }
             }
-
-            Servers.RemoveAll(match => match.ServerId == ServerID);
+            Log.Warning($"Connection from server {ServerID} ended (state {webSocket.State})");
+            Servers.RemoveAll(match => match.ServerId == ServerID && match.Socket == webSocket);
             if (webSocket is { State: WebSocketState.Aborted or WebSocketState.Closed or WebSocketState.CloseSent })
                 return;
             
@@ -139,6 +143,9 @@ namespace GameServer.Implementation.Common
 
         private static void ProcessMessage(Database database, WebSocket socket, GatewayMessage message)
         {
+
+            Log.Debug($"Gateway message {message.Type} from {message.From}");
+
             var response = new GatewayMessage
             {
                 From = MasterServer,
@@ -279,8 +286,8 @@ namespace GameServer.Implementation.Common
                                                     kart.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > kart.LongestHangTime)
                                                     kart.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > 0 && (character.BestLapTime <= 0 || player.BestLapTime < character.BestLapTime))
-                                                    character.BestLapTime = player.BestLapTime;
+                                                if (player.BestLapTime > 0 && (kart.BestLapTime <= 0 || player.BestLapTime < kart.BestLapTime))
+                                                    kart.BestLapTime = player.BestLapTime;
                                             }
                                         }
 
