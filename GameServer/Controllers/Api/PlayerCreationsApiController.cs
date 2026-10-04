@@ -623,7 +623,9 @@ namespace GameServer.Controllers.Api
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
-            query = query.OrderByDescending(x => x.PointsYesterday);
+            query = query
+                .OrderByDescending(x => x.PointsYesterday)
+                .ThenByDescending(x => x.PointsAmount);
 
             var total = query.Count();
 
