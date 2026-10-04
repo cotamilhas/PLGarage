@@ -123,7 +123,7 @@ namespace GameServer.Implementation.Common
                 }
             }
 
-            Servers.RemoveAll(match => match.ServerId == ServerID);
+            Servers.RemoveAll(match => match.ServerId == ServerID && match.Socket == webSocket);
             if (webSocket is { State: WebSocketState.Aborted or WebSocketState.Closed or WebSocketState.CloseSent })
                 return;
             
