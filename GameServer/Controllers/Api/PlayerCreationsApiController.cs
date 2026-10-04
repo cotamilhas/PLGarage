@@ -176,11 +176,12 @@ namespace GameServer.Controllers.Api
 
             var q = database.PlayerCreations
                 .AsNoTracking()
-                .Where(x => x.Type == PlayerCreationType.CHARACTER
-                && x.Type == PlayerCreationType.KART
-                && x.Type == PlayerCreationType.TRACK
-                && x.ModerationStatus != ModerationStatus.BANNED
-                && x.ModerationStatus != ModerationStatus.ILLEGAL);
+                .Where(x =>
+                    (x.Type == PlayerCreationType.CHARACTER
+                    || x.Type == PlayerCreationType.KART
+                    || x.Type == PlayerCreationType.TRACK)
+                    && x.ModerationStatus != ModerationStatus.BANNED
+                    && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
             if (!string.IsNullOrEmpty(query))
             {
@@ -304,12 +305,16 @@ namespace GameServer.Controllers.Api
             var q = database.PlayerCreations
                 .AsNoTracking()
                 .Where(x => x.Author.Username == username
-                && x.Type == PlayerCreationType.CHARACTER
-                && x.Type == PlayerCreationType.KART
-                && x.Type == PlayerCreationType.TRACK
+                && (x.Type == PlayerCreationType.CHARACTER
+                || x.Type == PlayerCreationType.KART
+                || x.Type == PlayerCreationType.TRACK)
                 && x.ModerationStatus != ModerationStatus.BANNED
-                && x.ModerationStatus != ModerationStatus.ILLEGAL
-                && (!isMnr.HasValue || x.IsMNR == isMnr.Value));
+                && x.ModerationStatus != ModerationStatus.ILLEGAL);
+
+            if (isMnr.HasValue)
+            {
+                q = q.Where(x => x.IsMNR == isMnr.Value);
+            }
 
             if (type.HasValue)
             {
@@ -618,7 +623,9 @@ namespace GameServer.Controllers.Api
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
-            query = query.OrderByDescending(x => x.PointsYesterday);
+            query = query
+                .OrderByDescending(x => x.PointsYesterday)
+                .ThenByDescending(x => x.PointsAmount);
 
             var total = query.Count();
 
