@@ -153,9 +153,9 @@ namespace GameServer.Controllers.Api
 
             var filtered = database.PlayerCreations
                 .AsNoTracking()
-                .Where(c => c.IsMNR 
-                        && c.Platform == platform 
-                        && c.Type != PlayerCreationType.DELETED
+                .Where(c => c.IsMNR
+                    && c.Platform == platform
+                    && (c.Type != PlayerCreationType.STORY || c.Type != PlayerCreationType.DELETED)
                         && c.ModerationStatus != ModerationStatus.BANNED
                         && c.ModerationStatus != ModerationStatus.ILLEGAL);
 
@@ -170,7 +170,7 @@ namespace GameServer.Controllers.Api
                 c.PlayerId,
                 c.Author.Username,
                 Xp = c.Points.Sum(p => (int?)p.Amount) ?? 0,
-                Downloads = c.Hearts.Count(),
+                Downloads = c.Downloads.Count(),
                 Views = c.Views.Count()
             });
 
