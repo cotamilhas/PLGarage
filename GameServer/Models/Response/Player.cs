@@ -99,5 +99,7 @@ namespace GameServer.Models.Response
         public string star_rating { get; set; }
         [XmlAttribute]
         public string rating { get; set; }
+        [XmlAttribute]
+        public int skill_rating { get; set; }
     }
 }

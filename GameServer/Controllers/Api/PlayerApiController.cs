@@ -1,4 +1,5 @@
 using GameServer.Implementation.Common;
+using GameServer.Models.Config;
 using System.Collections.Generic;
 using System.Linq;
 using GameServer.Models.PlayerData;
@@ -43,6 +44,7 @@ namespace GameServer.Controllers.Api
             else
                 query = query.Where(x => x.Username == username);
 
+            int defaultSkillRating = SkillRatingConfig.Instance.StartingRating;
             var player = query
                 .Select(x => new
                 {
@@ -70,7 +72,10 @@ namespace GameServer.Controllers.Api
                     totalXpPSP = x.TotalXP(Platform.PSP),
                     creationXpPSP = x.CreatorPoints(Platform.PSP),
                     raceXpPSP = x.ExperiencePoints(Platform.PSP),
-                    skillRating = x.Points(Platform.PS3),
+                    skillRating = x.SkillRatings
+                        .Where(rating => rating.Platform == Platform.PS3)
+                        .Select(rating => (int?)rating.Rating)
+                        .FirstOrDefault() ?? defaultSkillRating,
                     x.WinStreak,
                     x.LongestWinStreak,
                     x.LongestDrift,

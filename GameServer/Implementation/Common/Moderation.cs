@@ -720,7 +720,7 @@ namespace GameServer.Implementation.Common
             user.Quote = null;
 
             database.PlayerExperiencePoints.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
-            database.PlayerPoints.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
+            database.PlayerSkillRatings.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
             database.TravelPoints.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
             database.OnlineRacesStarted.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
             database.OnlineRacesFinished.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
@@ -930,6 +930,19 @@ namespace GameServer.Implementation.Common
 
             if (ServerConfig.Instance.DeleteCreationData)
                 storage.RemoveProfileAvatars(targetUserId, isMNR);
+
+            return "ok";
+        }
+
+        public static string ResetSkillRating(Database database, int targetUserId)
+        {
+            if (!database.Users.Any(u => u.UserId == targetUserId))
+                return null;
+
+            int startingRating = SkillRatingConfig.Instance.StartingRating;
+            database.PlayerSkillRatings
+                .Where(rating => rating.PlayerId == targetUserId)
+                .ExecuteUpdate(setter => setter.SetProperty(rating => rating.Rating, startingRating));
 
             return "ok";
         }

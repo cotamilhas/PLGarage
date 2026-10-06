@@ -1,4 +1,5 @@
 ﻿using GameServer.Models.Config;
+using GameServer.Models.GameBrowser;
 using GameServer.Models.ServerCommunication;
 using GameServer.Utils;
 using Newtonsoft.Json;
@@ -123,7 +124,7 @@ namespace GameServer.Implementation.Common
                 }
                 catch (Exception e)
                 {
-                    Log.Debug($"Failed to process message: {e}");
+                    Log.Error($"Failed to process message: {e}");
                 }
             }
             Log.Warning($"Connection from server {ServerID} ended (state {webSocket.State})");
@@ -249,6 +250,7 @@ namespace GameServer.Implementation.Common
                         if (ParseMessage(message, response, out EventFinishedEvent info))
                         {
                             PlayerCreationData creation = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == info.TrackId);
+                            bool skillRatingUpdated = UpdateSkillRatings(database, info, creation?.Platform);
                             if (creation != null)
                             {
                                 creation.RacesFinished++;
@@ -435,6 +437,10 @@ namespace GameServer.Implementation.Common
                                 }
                                 database.SaveChanges();
                             }
+                            else if (skillRatingUpdated)
+                            {
+                                database.SaveChanges();
+                            }
                             return;
                         }
 
@@ -517,6 +523,90 @@ namespace GameServer.Implementation.Common
                 response.Content = $"Unknown sender {message.From}";
                 Send(socket, JsonConvert.SerializeObject(response)).Wait();
             }
+        }
+
+        private static bool UpdateSkillRatings(Database database, EventFinishedEvent info, Platform? platform)
+        {
+            if (info.GameType != GameType.ONLINE_ACTION_RACE && info.GameType != GameType.ONLINE_PURE_RACE)
+            {
+                Log.Information("Skill rating skipped: game type {GameType} not rated.", info.GameType);
+                return false;
+            }
+
+            var stats = info.Stats
+                .Where(player => player.Rank > 0)
+                .GroupBy(player => player.PlayerConnectId)
+                .Select(group => group.First())
+                .ToList();
+
+            int[] playerIds = stats.Select(player => player.PlayerConnectId).ToArray();
+
+            var users = database.Users
+                .Where(user => playerIds.Contains(user.UserId))
+                .ToDictionary(user => user.UserId);
+
+            var participants = stats
+                .Where(player => users.ContainsKey(player.PlayerConnectId))
+                .ToList();
+
+            int startingRating = SkillRatingConfig.Instance.StartingRating;
+            var ratings = database.PlayerSkillRatings
+                .Where(rating => playerIds.Contains(rating.PlayerId) && rating.Platform == platform.Value)
+                .ToDictionary(rating => rating.PlayerId);
+
+            foreach (var participant in participants)
+            {
+                if (ratings.ContainsKey(participant.PlayerConnectId))
+                    continue;
+
+                var rating = new PlayerSkillRating
+                {
+                    PlayerId = participant.PlayerConnectId,
+                    Platform = platform.Value,
+                    Rating = startingRating
+                };
+                database.PlayerSkillRatings.Add(rating);
+                ratings.Add(rating.PlayerId, rating);
+            }
+
+            var skillRatingConfig = SkillRatingConfig.Instance;
+            var ratingParticipants = participants
+                .Select(player => new SkillRatingParticipant(ratings[player.PlayerConnectId].Rating, player.Rank))
+                .ToList();
+                
+            int[] changes = SkillRating.Calculate(
+                ratingParticipants,
+                skillRatingConfig.KFactor,
+                skillRatingConfig.RatingScale);
+
+            var unchangedRatings = participants
+                .Select((participant, index) => new { Participant = participant, Index = index })
+                .Where(result => changes[result.Index] == 0)
+                .ToList();
+            if (unchangedRatings.Count > 0)
+            {
+                Log.Warning(
+                    "Skill rating change rounded to 0 points for {Count} player(s) in track {TrackId} ({GameType}); no rating points were added or removed: {Players}",
+                    unchangedRatings.Count,
+                    info.TrackId,
+                    info.GameType,
+                    string.Join(", ", unchangedRatings.Select(result =>
+                    {
+                        var participant = result.Participant;
+                        var rating = ratings[participant.PlayerConnectId];
+                        return $"{participant.PlayerConnectId} (position {participant.Rank}, rating {rating.Rating})";
+                    })));
+            }
+
+            for (int i = 0; i < participants.Count; i++)
+            {
+                var rating = ratings[participants[i].PlayerConnectId];
+                rating.Rating = (int)Math.Clamp((long)rating.Rating + changes[i], 0, int.MaxValue);
+                rating.RacesRated++;
+            }
+
+            Log.Information("Skill ratings updated for track {TrackId} ({GameType}): {Rated} rated of {Total} in race. {Changes}", info.TrackId, info.GameType, participants.Count, info.Stats.Count, string.Join(", ", participants.Select((p, i) => $"{p.PlayerConnectId} (position {p.Rank}, {ratingParticipants[i].Rating} -> {ratings[p.PlayerConnectId].Rating}): {changes[i]:+#;-#;0}")));
+            return true;
         }
 
         private static bool ParseMessage<T>(GatewayMessage message, GatewayMessage response, out T evt)

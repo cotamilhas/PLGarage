@@ -31,7 +31,8 @@ namespace GameServer.Implementation.Player
                 .AsNoTracking()
                 .Include(u => u.PlayerExperiencePoints)
                 .Include(u => u.PlayerCreationPoints)
-                .FirstOrDefault(match => match.UserId == session.UserId);
+                .Include(u => u.SkillRatings)
+                .FirstOrDefault(match => match.UserId == session.UserId && !match.IsBanned);
 
             UserGeneratedContentUtils.AddStoryLevel(database, sub_key_id);
 
@@ -372,7 +373,7 @@ namespace GameServer.Implementation.Player
             var requestedBy = database.Users
                 .AsNoTracking()
                 .AsSplitQuery()
-                .Include(x => x.PlayerPoints)
+                .Include(x => x.SkillRatings)
                 .Include(x => x.RacesStarted)
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
@@ -382,12 +383,12 @@ namespace GameServer.Implementation.Player
             var usersQuery = database.Users
                 .AsNoTracking()
                 .AsSplitQuery()
-                .Include(x => x.PlayerPoints)
+                .Include(x => x.SkillRatings)
                 .Include(x => x.RacesStarted)
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
                 .Include(x => x.PlayerExperiencePoints)
-                .Where(match => match.Username != "ufg" && match.PlayedMNR);
+                .Where(match => match.Username != "ufg" && match.PlayedMNR && !match.IsBanned);
             var scoresQuery = database.Scores
                 .AsNoTracking()
                 .AsSplitQuery()
@@ -484,12 +485,7 @@ namespace GameServer.Implementation.Player
                         break;
 
                     case SortColumn.points:
-                        if (type == LeaderboardType.LIFETIME)
-                            usersQuery = usersQuery.OrderByDescending(u => u.PlayerPoints.Where(match => match.Platform == platform).Sum(p => p.Amount));
-                        if (type == LeaderboardType.WEEKLY)
-                            usersQuery = usersQuery.OrderByDescending(u => u.PlayerPoints.Where(match => match.Platform == platform && match.CreatedAt >= TimeUtils.ThisWeekStart).Sum(p => p.Amount));
-                        if (type == LeaderboardType.LAST_WEEK)
-                            usersQuery = usersQuery.OrderByDescending(u => u.PlayerPoints.Where(match => match.Platform == platform && match.CreatedAt >= TimeUtils.LastWeekStart && match.CreatedAt < TimeUtils.ThisWeekStart).Sum(p => p.Amount));
+                        usersQuery = usersQuery.OrderByDescending(u => u.Points(platform));
                         break;
 
                     default:
@@ -894,12 +890,12 @@ namespace GameServer.Implementation.Player
             var user = database.Users
                 .AsNoTracking()
                 .AsSplitQuery()
-                .Include(x => x.PlayerPoints)
                 .Include(x => x.RacesStarted)
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
                 .Include(x => x.PlayerExperiencePoints)
-                .FirstOrDefault(match => match.UserId == player_id && match.PlayedMNR);
+                .Include(x => x.SkillRatings)
+                .FirstOrDefault(match => match.UserId == player_id && match.PlayedMNR && !match.IsBanned);
             
             var score = database.Scores
                 .AsNoTracking()

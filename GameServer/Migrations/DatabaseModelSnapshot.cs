@@ -1165,31 +1165,23 @@ namespace GameServer.Migrations
                     b.ToTable("PlayerExperiencePoints");
                 });
 
-            modelBuilder.Entity("GameServer.Models.PlayerData.PlayerPoint", b =>
+            modelBuilder.Entity("GameServer.Models.PlayerData.PlayerSkillRating", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("PlayerId")
                         .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("Platform")
                         .HasColumnType("int");
 
-                    b.Property<int>("PlayerId")
+                    b.Property<int>("Rating")
                         .HasColumnType("int");
 
-                    b.HasKey("Id");
+                    b.Property<int>("RacesRated")
+                        .HasColumnType("int");
 
-                    b.HasIndex("PlayerId");
+                    b.HasKey("PlayerId", "Platform");
 
-                    b.ToTable("PlayerPoints");
+                    b.ToTable("PlayerSkillRatings");
                 });
 
             modelBuilder.Entity("GameServer.Models.PlayerData.PlayerRatingData", b =>
@@ -2005,10 +1997,10 @@ namespace GameServer.Migrations
                     b.Navigation("Player");
                 });
 
-            modelBuilder.Entity("GameServer.Models.PlayerData.PlayerPoint", b =>
+            modelBuilder.Entity("GameServer.Models.PlayerData.PlayerSkillRating", b =>
                 {
                     b.HasOne("GameServer.Models.PlayerData.User", "Player")
-                        .WithMany("PlayerPoints")
+                        .WithMany("SkillRatings")
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2171,7 +2163,7 @@ namespace GameServer.Migrations
 
                     b.Navigation("PlayerExperiencePoints");
 
-                    b.Navigation("PlayerPoints");
+                    b.Navigation("SkillRatings");
 
                     b.Navigation("PlayerRatings");
 

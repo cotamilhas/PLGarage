@@ -22,7 +22,7 @@ namespace GameServer.Controllers.Common
             var session = Session.GetSession(database, User);
             var query = database.Users
                 .AsNoTracking()
-                .Include(u => u.PlayerPoints)
+                .Include(u => u.SkillRatings)
                 .Include(u => u.RacesStarted)
                 .Where(match => player_ids.Contains(match.UserId));
             

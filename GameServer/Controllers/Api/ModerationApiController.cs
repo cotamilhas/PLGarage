@@ -554,6 +554,23 @@ namespace GameServer.Controllers.Api
             else
                 return Content(result);
         }
+
+        [HttpPost]
+        [Authorize(Policy = JWTUtils.ModeratorPolicy)]
+        [Route("/api/moderation/users/{id}/skill_rating")]
+        public IActionResult ResetSkillRating(int id)
+        {
+            var user = Moderation.GetUser(database, User);
+            if (user == null || !user.ResetUserStats)
+                return StatusCode(403);
+
+            var result = Moderation.ResetSkillRating(database, id);
+
+            if (result == null)
+                return NotFound();
+            else
+                return Content(result);
+        }
         #endregion
 
         #region PlayerComplaints

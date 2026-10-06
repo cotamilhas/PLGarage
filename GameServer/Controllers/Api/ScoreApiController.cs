@@ -1,4 +1,5 @@
-﻿using GameServer.Models.PlayerData;
+﻿using GameServer.Models.Config;
+using GameServer.Models.PlayerData;
 using GameServer.Models.PlayerData.PlayerCreations;
 using GameServer.Utils;
 using Microsoft.AspNetCore.Mvc;
@@ -228,6 +229,7 @@ namespace GameServer.Controllers.Api
                 .AsNoTracking()
                 .Where(u => u.PlayedMNR && !u.IsBanned);
 
+            int defaultSkillRating = SkillRatingConfig.Instance.StartingRating;
             var projected = filtered
                 .Select(u => new
                 {
@@ -242,34 +244,16 @@ namespace GameServer.Controllers.Api
                     u.ModMiles,
                     RaceXp = u.PlayerExperiencePoints.Sum(p => (int?)p.Amount) ?? 0,
                     CreationXp = u.PlayerCreationPoints.Sum(p => (int?)p.Amount) ?? 0,
-                    PointsCount = u.PlayerPoints.Count(),
-                    PointsAverage = u.PlayerPoints.Average(p => (float?)p.Amount) ?? 0
-                })
-                .Select(u => new
-                {
-                    u.UserId,
-                    u.Username,
-                    u.Races,
-                    u.Wins,
-                    u.LongestWinStreak,
-                    u.CurrentStreak,
-                    u.Airtime,
-                    u.Drift,
-                    u.ModMiles,
-                    u.RaceXp,
-                    u.CreationXp,
-                    u.PointsCount,
-                    u.PointsAverage,
-                    SkillRating = u.PointsCount < 10
-                        ? 1500
-                        : u.PointsAverage < 0
-                            ? 0
-                            : u.PointsAverage > 3000
-                                ? 3000
-                                : (int)u.PointsAverage
+                    SkillRating = u.SkillRatings
+                        .Where(rating => rating.Platform == Platform.PS3)
+                        .Select(rating => (int?)rating.Rating)
+                        .FirstOrDefault() ?? defaultSkillRating
                 });
 
-            var sort = sortBy ?? "totalxp";
+            var sort = (sortBy ?? "totalxp")
+                .Replace("_", "")
+                .Replace("-", "")
+                .ToLowerInvariant();
 
             var orderedQuery = sort switch
             {

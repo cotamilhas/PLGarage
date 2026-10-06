@@ -39,10 +39,13 @@ namespace GameServer.Models.PlayerData
         //[Projectable]
         public int Rank(Database database) => GetRank(database, GameType.OVERALL, LeaderboardType.LIFETIME, Platform.PS3, SortColumn.points);
 
-        public List<PlayerPoint> PlayerPoints { get; set; }
+        public List<PlayerSkillRating> SkillRatings { get; set; } = [];
 
         [Projectable]
-        public float Points(Platform platform) => PlayerPoints.Count >= 10 ? float.Clamp((float)PlayerPoints.Where(match => match.Platform == platform).Average(p => p.Amount), 0, 3000) : 1500;
+        public float Points(Platform platform) => SkillRatings
+            .Where(rating => rating.Platform == platform)
+            .Select(rating => (float?)rating.Rating)
+            .FirstOrDefault() ?? SkillRatingConfig.Instance.StartingRating;
 
         public List<RaceStarted> RacesStarted { get; set; }
         public List<RaceFinished> RacesFinished { get; set; }
@@ -177,7 +180,7 @@ namespace GameServer.Models.PlayerData
             var users = database.Users
                 .AsNoTracking()
                 .AsSplitQuery()
-                .Include(x => x.PlayerPoints)
+                .Include(x => x.SkillRatings)
                 .Include(x => x.RacesStarted)
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
@@ -254,12 +257,7 @@ namespace GameServer.Models.PlayerData
                         break;
 
                     case SortColumn.points:
-                        if (leaderboardType == LeaderboardType.LIFETIME)
-                            users = users.OrderByDescending(u => u.PlayerPoints.Where(match => match.Platform == platform).Sum(p => p.Amount));
-                        if (leaderboardType == LeaderboardType.WEEKLY)
-                            users = users.OrderByDescending(u => u.PlayerPoints.Where(match => match.Platform == platform && match.CreatedAt >= TimeUtils.ThisWeekStart).Sum(p => p.Amount));
-                        if (leaderboardType == LeaderboardType.LAST_WEEK)
-                            users = users.OrderByDescending(u => u.PlayerPoints.Where(match => match.Platform == platform && match.CreatedAt >= TimeUtils.LastWeekStart && match.CreatedAt < TimeUtils.ThisWeekStart).Sum(p => p.Amount));
+                        users = users.OrderByDescending(u => u.Points(platform));
                         break;
 
                     default:

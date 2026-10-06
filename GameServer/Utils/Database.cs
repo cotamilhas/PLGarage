@@ -28,12 +28,12 @@ namespace GameServer.Utils
         public DbSet<ActivityEvent> ActivityLog { get; set; }
         public DbSet<RaceStarted> OnlineRacesStarted { get; set; }
         public DbSet<RaceFinished> OnlineRacesFinished { get; set; }
+        public DbSet<PlayerSkillRating> PlayerSkillRatings { get; set; }
         public DbSet<Buddy> Buddies { get; set; }
         public DbSet<BlockedUser> BlockedUsers { get; set; }
         //MNR
         public DbSet<PlayerRatingData> PlayerRatings { get; set; }
         public DbSet<PlayerCreationPoint> PlayerCreationPoints { get; set; }
-        public DbSet<PlayerPoint> PlayerPoints { get; set; }
         public DbSet<PlayerExperiencePoint> PlayerExperiencePoints { get; set; }
         public DbSet<MailMessageData> MailMessages { get; set; }
         public DbSet<PlayerComplaintData> PlayerComplaints { get; set; }
@@ -57,6 +57,15 @@ namespace GameServer.Utils
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<PlayerSkillRating>()
+                .HasKey(rating => new { rating.PlayerId, rating.Platform });
+
+            modelBuilder.Entity<PlayerSkillRating>()
+                .HasOne(rating => rating.Player)
+                .WithMany(user => user.SkillRatings)
+                .HasForeignKey(rating => rating.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<PlayerCreationData>()
                 .Property(b => b.HasPreview)
                 .HasDefaultValue(true);

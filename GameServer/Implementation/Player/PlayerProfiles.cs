@@ -1,4 +1,5 @@
 ﻿using GameServer.Models;
+using GameServer.Models.Config;
 using GameServer.Models.PlayerData;
 using GameServer.Models.Request;
 using GameServer.Models.Response;
@@ -83,10 +84,10 @@ namespace GameServer.Implementation.Player
                 .Include(u => u.RacesStarted)
                 .Include(u => u.RacesFinished)
                 .Include(u => u.PlayerRatings)
-                .Include(u => u.PlayerPoints)
                 .Include(u => u.PlayerExperiencePoints)
                 .Include(u => u.PlayerCreations)
                 .Include(u => u.PlayerCreationPoints)
+                .Include(u => u.SkillRatings)
                 .FirstOrDefault(match => match.UserId == id);
             var requestedBy = session.User;
 
@@ -142,6 +143,10 @@ namespace GameServer.Implementation.Player
                         skill_level = user.SkillLevelName(session.Platform),
                         skill_level_id = user.SkillLevelId(session.Platform),
                         skill_level_name = user.SkillLevelName(session.Platform),
+                        skill_rating = user.SkillRatings
+                            .Where(rating => rating.Platform == session.Platform)
+                            .Select(rating => (int?)rating.Rating)
+                            .FirstOrDefault() ?? SkillRatingConfig.Instance.StartingRating,
                         rating = user.Rating.ToString("0.00", CultureInfo.InvariantCulture),
                         star_rating = user.StarRating,
                         creator_points = user.CreatorPoints(session.Platform),
