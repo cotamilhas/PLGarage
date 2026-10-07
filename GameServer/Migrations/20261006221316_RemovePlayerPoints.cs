@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GameServer.Migrations
 {
     [DbContext(typeof(Database))]
-    [Migration("20261005000000_RemovePlayerPoints")]
+    [Migration("20261006221316_RemovePlayerPoints")]
     public partial class RemovePlayerPoints : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

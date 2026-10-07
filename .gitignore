@@ -375,6 +375,7 @@ eula.txt
 mod_explorer.json
 bannedConsoleIds.json
 bannedIPs.json
+skill_rating.json
 # User Generated Content
 /GameServer/UGC/
 /GameServer/placeholder.png

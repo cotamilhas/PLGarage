@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GameServer.Migrations
 {
     [DbContext(typeof(Database))]
-    [Migration("20261004150000_PlayerSkillRatings")]
+    [Migration("20261006221315_PlayerSkillRatings")]
     public partial class PlayerSkillRatings : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
