@@ -96,9 +96,9 @@ namespace GameServer.Controllers.Api
                     x.IsMNR,
                     ModerationStatus = x.ModerationStatus == 0 ? "APPROVED" : x.ModerationStatus.ToString(),
                     x.CreatedAt,
-                    pointsAllTime = x.Points.Sum(p => p.Amount),
-                    pointsThisWeek = x.Points.Where(p => p.CreatedAt >= TimeUtils.ThisWeekStart).Sum(p => p.Amount),
-                    pointsLastWeek = x.Points.Where(p => p.CreatedAt >= TimeUtils.LastWeekStart && p.CreatedAt < TimeUtils.ThisWeekStart).Sum(p => p.Amount),
+                    pointsAllTime = x.PointsAmount,
+                    pointsThisWeek = x.PointsThisWeek,
+                    pointsLastWeek = x.PointsLastWeek,
                     downloadsAllTime = x.Downloads.Count,
                     downloadsThisWeek = x.Downloads.Count(d => d.DownloadedAt >= TimeUtils.ThisWeekStart),
                     downloadsLastWeek = x.Downloads.Count(d => d.DownloadedAt >= TimeUtils.LastWeekStart && d.DownloadedAt < TimeUtils.ThisWeekStart),
@@ -224,9 +224,9 @@ namespace GameServer.Controllers.Api
                     x.Platform,
                     x.IsMNR,
                     x.CreatedAt,
-                    pointsAllTime = x.Points.Sum(p => p.Amount),
-                    pointsThisWeek = x.Points.Where(p => p.CreatedAt >= TimeUtils.ThisWeekStart).Sum(p => p.Amount),
-                    pointsLastWeek = x.Points.Where(p => p.CreatedAt >= TimeUtils.LastWeekStart && p.CreatedAt < TimeUtils.ThisWeekStart).Sum(p => p.Amount),
+                    pointsAllTime = x.PointsAmount,
+                    pointsThisWeek = x.PointsThisWeek,
+                    pointsLastWeek = x.PointsLastWeek,
                     downloadsAllTime = x.Downloads.Count,
                     downloadsThisWeek = x.Downloads.Count(d => d.DownloadedAt >= TimeUtils.ThisWeekStart),
                     downloadsLastWeek = x.Downloads.Count(d => d.DownloadedAt >= TimeUtils.LastWeekStart && d.DownloadedAt < TimeUtils.ThisWeekStart),
@@ -347,9 +347,9 @@ namespace GameServer.Controllers.Api
                     x.Platform,
                     x.IsMNR,
                     x.CreatedAt,
-                    pointsAllTime = x.Points.Sum(p => p.Amount),
-                    pointsThisWeek = x.Points.Where(p => p.CreatedAt >= TimeUtils.ThisWeekStart).Sum(p => p.Amount),
-                    pointsLastWeek = x.Points.Where(p => p.CreatedAt >= TimeUtils.LastWeekStart && p.CreatedAt < TimeUtils.ThisWeekStart).Sum(p => p.Amount),
+                    pointsAllTime = x.PointsAmount,
+                    pointsThisWeek = x.PointsThisWeek,
+                    pointsLastWeek = x.PointsLastWeek,
                     downloadsAllTime = x.Downloads.Count,
                     downloadsThisWeek = x.Downloads.Count(d => d.DownloadedAt >= TimeUtils.ThisWeekStart),
                     downloadsLastWeek = x.Downloads.Count(d => d.DownloadedAt >= TimeUtils.LastWeekStart && d.DownloadedAt < TimeUtils.ThisWeekStart),
@@ -623,9 +623,7 @@ namespace GameServer.Controllers.Api
                     && x.ModerationStatus != ModerationStatus.BANNED
                     && x.ModerationStatus != ModerationStatus.ILLEGAL);
 
-            query = query.OrderByDescending(x => x.Points
-                .Where(p => p.CreatedAt >= TimeUtils.YesterdayStart && p.CreatedAt < TimeUtils.DayStart)
-                .Sum(p => (float?)p.Amount) ?? 0);
+            query = query.OrderByDescending(x => x.PointsYesterday);
 
             var total = query.Count();
 
@@ -643,16 +641,10 @@ namespace GameServer.Controllers.Api
                     x.Tags,
                     x.CreatedAt,
                     x.UpdatedAt,
-                    pointsYesterday = x.Points
-                        .Where(p => p.CreatedAt >= TimeUtils.YesterdayStart && p.CreatedAt < TimeUtils.DayStart)
-                        .Sum(p => (float?)p.Amount) ?? 0,
-                    points = x.Points.Sum(p => (float?)p.Amount) ?? 0,
-                    pointsThisWeek = x.Points
-                        .Where(p => p.CreatedAt >= TimeUtils.ThisWeekStart)
-                        .Sum(p => (float?)p.Amount) ?? 0,
-                    pointsLastWeek = x.Points
-                        .Where(p => p.CreatedAt >= TimeUtils.LastWeekStart && p.CreatedAt < TimeUtils.ThisWeekStart)
-                        .Sum(p => (float?)p.Amount) ?? 0,
+                    pointsYesterday = x.PointsYesterday,
+                    points = x.PointsAmount,
+                    pointsThisWeek = x.PointsThisWeek,
+                    pointsLastWeek = x.PointsLastWeek,
                     downloads = x.DownloadsCount,
                     downloadsThisWeek = x.DownloadsThisWeek,
                     downloadsLastWeek = x.DownloadsLastWeek,
