@@ -1,5 +1,6 @@
 ﻿using GameServer.Models.PlayerData;
 using GameServer.Models.PlayerData.PlayerCreations;
+using GameServer.Models.Config;
 using GameServer.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -282,6 +283,7 @@ namespace GameServer.Controllers.Api
                 .AsNoTracking()
                 .Where(u => u.PlayedMNR && !u.IsBanned);
 
+            int startingRating = SkillRatingConfig.Instance.StartingRating;
             var projected = filtered
                 .Select(u => new
                 {
@@ -296,31 +298,9 @@ namespace GameServer.Controllers.Api
                     u.ModMiles,
                     RaceXp = u.PlayerExperiencePoints.Sum(p => (int?)p.Amount) ?? 0,
                     CreationXp = u.PlayerCreationPoints.Sum(p => (int?)p.Amount) ?? 0,
-                    PointsCount = u.PlayerPoints.Count(),
-                    PointsAverage = u.PlayerPoints.Average(p => (float?)p.Amount) ?? 0
-                })
-                .Select(u => new
-                {
-                    u.UserId,
-                    u.Username,
-                    u.Races,
-                    u.Wins,
-                    u.LongestWinStreak,
-                    u.CurrentStreak,
-                    u.Airtime,
-                    u.Drift,
-                    u.ModMiles,
-                    u.RaceXp,
-                    u.CreationXp,
-                    u.PointsCount,
-                    u.PointsAverage,
-                    SkillRating = u.PointsCount < 10
-                        ? 1500
-                        : u.PointsAverage < 0
-                            ? 0
-                            : u.PointsAverage > 3000
-                                ? 3000
-                                : (int)u.PointsAverage
+                    SkillRating = (long)startingRating + (u.PlayerPoints
+                        .Where(point => point.Platform == Platform.PS3)
+                        .Sum(point => (long?)point.Amount) ?? 0)
                 });
 
             var sort = sortBy ?? "totalxp";

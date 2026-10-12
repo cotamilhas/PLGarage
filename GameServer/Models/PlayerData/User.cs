@@ -42,7 +42,9 @@ namespace GameServer.Models.PlayerData
         public List<PlayerPoint> PlayerPoints { get; set; }
 
         [Projectable]
-        public float Points(Platform platform) => PlayerPoints.Count >= 10 ? float.Clamp((float)PlayerPoints.Where(match => match.Platform == platform).Average(p => p.Amount), 0, 3000) : 1500;
+        public float Points(Platform platform) => SkillRatingConfig.Instance.StartingRating + PlayerPoints
+            .Where(match => match.Platform == platform)
+            .Sum(point => (float)point.Amount);
 
         public List<RaceStarted> RacesStarted { get; set; }
         public List<RaceFinished> RacesFinished { get; set; }

@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using GameServer.Models.PlayerData;
+using GameServer.Models.GameBrowser;
 using GameServer.Models.ServerCommunication.Events;
 using GameServer.Models.PlayerData.PlayerCreations;
 
@@ -244,6 +245,7 @@ namespace GameServer.Implementation.Common
                             PlayerCreationData creation = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == info.TrackId);
                             if (creation != null)
                             {
+                                UpdateSkillRatings(database, info, creation.Platform);
                                 creation.RacesFinished++;
                                 foreach (var player in info.Stats)
                                 {
@@ -510,6 +512,84 @@ namespace GameServer.Implementation.Common
                 response.Content = $"Unknown sender {message.From}";
                 Send(socket, JsonConvert.SerializeObject(response)).Wait();
             }
+        }
+
+        private static void UpdateSkillRatings(Database database, EventFinishedEvent info, Platform platform)
+        {
+            if (info.GameType != GameType.ONLINE_ACTION_RACE && info.GameType != GameType.ONLINE_PURE_RACE)
+                return;
+
+            var participants = info.Stats
+                .Where(player => player.Rank > 0)
+                .GroupBy(player => player.PlayerConnectId)
+                .Select(group => group.First())
+                .ToList();
+
+            int[] playerIds = participants.Select(player => player.PlayerConnectId).ToArray();
+            var knownPlayerIds = database.Users
+                .Where(user => playerIds.Contains(user.UserId))
+                .Select(user => user.UserId)
+                .ToHashSet();
+
+            participants = participants
+                .Where(player => knownPlayerIds.Contains(player.PlayerConnectId))
+                .ToList();
+
+            if (participants.Count < 2)
+                return;
+
+            var skillRatingConfig = SkillRatingConfig.Instance;
+            var pointsByPlayer = database.PlayerPoints
+                .Where(point => playerIds.Contains(point.PlayerId) && point.Platform == platform)
+                .GroupBy(point => point.PlayerId)
+                .Select(group => new
+                {
+                    PlayerId = group.Key,
+                    RatingDelta = group.Sum(point => (long)point.Amount)
+                })
+                .ToDictionary(result => result.PlayerId, result => result.RatingDelta);
+
+            var ratingParticipants = participants
+                .Select(player =>
+                {
+                    pointsByPlayer.TryGetValue(player.PlayerConnectId, out long ratingDelta);
+                    int rating = (int)Math.Clamp(skillRatingConfig.StartingRating + ratingDelta, 0, int.MaxValue);
+                    return new SkillRatingParticipant(rating, player.Rank);
+                })
+                .ToList();
+
+            int[] changes = SkillRating.Calculate(
+                ratingParticipants,
+                skillRatingConfig.KFactor,
+                skillRatingConfig.RatingScale);
+            DateTime createdAt = TimeUtils.Now;
+            var appliedChanges = new int[participants.Count];
+
+            for (int i = 0; i < participants.Count; i++)
+            {
+                int newRating = (int)Math.Clamp(
+                    (long)ratingParticipants[i].Rating + changes[i],
+                    0,
+                    int.MaxValue);
+                appliedChanges[i] = newRating - ratingParticipants[i].Rating;
+
+                database.PlayerPoints.Add(new PlayerPoint
+                {
+                    PlayerId = participants[i].PlayerConnectId,
+                    Platform = platform,
+                    CreatedAt = createdAt,
+                    Amount = appliedChanges[i]
+                });
+            }
+
+            Log.Information(
+                "Skill ratings updated for track {TrackId} ({GameType}): {Rated} rated of {Total} in race. {Changes}",
+                info.TrackId,
+                info.GameType,
+                participants.Count,
+                info.Stats.Count,
+                string.Join(", ", participants.Select((player, index) =>
+                    $"{player.PlayerConnectId} (position {player.Rank}, {ratingParticipants[index].Rating} -> {ratingParticipants[index].Rating + appliedChanges[index]}): {appliedChanges[index]:+#;-#;0}")));
         }
 
         private static bool ParseMessage<T>(GatewayMessage message, GatewayMessage response, out T evt)
