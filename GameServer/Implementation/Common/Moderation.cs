@@ -912,6 +912,22 @@ namespace GameServer.Implementation.Common
 
             return "ok";
         }
+
+        public static string ResetSkillRating(Database database, int targetUserId, Platform? platform)
+        {
+            if (!database.Users.Any(user => user.UserId == targetUserId))
+                return null;
+
+            var playerPoints = database.PlayerPoints
+                .Where(point => point.PlayerId == targetUserId);
+
+            if (platform.HasValue)
+                playerPoints = playerPoints.Where(point => point.Platform == platform.Value);
+
+            playerPoints.ExecuteDelete();
+
+            return "ok";
+        }
         #endregion
 
         #region PlayerComplaints

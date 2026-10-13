@@ -945,6 +945,23 @@ namespace GameServer.Controllers.Api
             else
                 return Content(result);
         }
+
+        [HttpDelete]
+        [Authorize(Policy = JWTUtils.ModeratorPolicy)]
+        [Route("/api/moderation/skill_rating/{playerId}")]
+        public IActionResult ResetSkillRating(int playerId, [FromQuery] Platform? platform = null)
+        {
+            var user = Moderation.GetUser(database, User);
+            if (user == null || !user.RemoveScores)
+                return StatusCode(403);
+
+            var result = Moderation.ResetSkillRating(database, playerId, platform);
+
+            if (result == null)
+                return NotFound();
+            else
+                return Content(result);
+        }
         #endregion
 
         #region Whitelist
