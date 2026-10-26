@@ -153,9 +153,10 @@ namespace GameServer.Controllers.Api
 
             var filtered = database.PlayerCreations
                 .AsNoTracking()
-                .Where(c => c.IsMNR
-                    && c.Platform == platform
-                    && (c.Type != PlayerCreationType.STORY || c.Type != PlayerCreationType.DELETED)
+                .Where(c => c.IsMNR 
+                        && c.Platform == platform 
+                        && c.Type != PlayerCreationType.DELETED
+                        && c.Type != PlayerCreationType.STORY
                         && c.ModerationStatus != ModerationStatus.BANNED
                         && c.ModerationStatus != ModerationStatus.ILLEGAL);
 
