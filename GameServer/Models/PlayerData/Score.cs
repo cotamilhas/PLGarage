@@ -46,7 +46,8 @@ namespace GameServer.Models.PlayerData
             var scores = database.Scores.Where(match => match.SubKeyId == SubKeyId
                 && match.SubGroupId == SubGroupId
                 && match.Platform == Platform
-                && match.PlaygroupSize == PlaygroupSize);
+                && match.PlaygroupSize == PlaygroupSize
+                && !match.User.IsBanned);
 
             if (sortColumn == SortColumn.finish_time)
                 scores = scores.OrderBy(s => s.FinishTime);

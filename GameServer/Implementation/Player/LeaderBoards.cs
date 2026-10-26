@@ -26,12 +26,12 @@ namespace GameServer.Implementation.Player
                 .ThenInclude(u => u.PlayerCreationPoints)
                 .Where(match => match.SubKeyId == sub_key_id && match.SubGroupId == sub_group_id 
                     && match.PlaygroupSize == playgroup_size && match.IsMNR == session.IsMNR 
-                    && match.Platform == platform);
+                    && match.Platform == platform && !match.User.IsBanned);
             var user = database.Users
                 .AsNoTracking()
                 .Include(u => u.PlayerExperiencePoints)
                 .Include(u => u.PlayerCreationPoints)
-                .FirstOrDefault(match => match.UserId == session.UserId);
+                .FirstOrDefault(match => match.UserId == session.UserId && !match.IsBanned);
 
             UserGeneratedContentUtils.AddStoryLevel(database, sub_key_id);
 
@@ -200,7 +200,7 @@ namespace GameServer.Implementation.Player
                 .ThenInclude(u => u.PlayerCreationPoints)
                 .Where(match => match.SubKeyId == sub_key_id 
                     && match.SubGroupId == sub_group_id && match.PlaygroupSize == playgroup_size 
-                    && match.Platform == platform && match.IsMNR == session.IsMNR);
+                    && match.Platform == platform && match.IsMNR == session.IsMNR && !match.User.IsBanned);
             var user = session.User;
 
             if (sort_column == SortColumn.finish_time)
@@ -285,7 +285,7 @@ namespace GameServer.Implementation.Player
                 .ThenInclude(u => u.PlayerCreationPoints)
                 .Where(match => match.PlayerId == user.UserId 
                     && match.SubGroupId == sub_group_id && match.SubKeyId == sub_key_id 
-                    && match.Platform == platform && match.IsMNR);
+                    && match.Platform == platform && match.IsMNR && !match.User.IsBanned);
 
             if (sort_column == SortColumn.finish_time)
                 scoresQuery = scoresQuery.OrderBy(s => s.FinishTime);
@@ -377,7 +377,7 @@ namespace GameServer.Implementation.Player
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
                 .Include(x => x.PlayerExperiencePoints)
-                .FirstOrDefault(match => match.UserId == session.UserId);
+                .FirstOrDefault(match => match.UserId == session.UserId && !match.IsBanned);
 
             var usersQuery = database.Users
                 .AsNoTracking()
@@ -387,7 +387,7 @@ namespace GameServer.Implementation.Player
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
                 .Include(x => x.PlayerExperiencePoints)
-                .Where(match => match.Username != "ufg" && match.PlayedMNR);
+                .Where(match => match.Username != "ufg" && match.PlayedMNR && !match.IsBanned);
             var scoresQuery = database.Scores
                 .AsNoTracking()
                 .AsSplitQuery()
@@ -395,7 +395,7 @@ namespace GameServer.Implementation.Player
                 .ThenInclude(u => u.PlayerExperiencePoints)
                 .Include(s => s.User)
                 .ThenInclude(u => u.PlayerCreationPoints)
-                .Where(match => match.IsMNR && match.SubGroupId == (int)game_type-10);
+                .Where(match => match.IsMNR && match.SubGroupId == (int)game_type-10 && !match.User.IsBanned);
 
             if (usernameFilter != null)
             {
@@ -899,7 +899,7 @@ namespace GameServer.Implementation.Player
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
                 .Include(x => x.PlayerExperiencePoints)
-                .FirstOrDefault(match => match.UserId == player_id && match.PlayedMNR);
+                .FirstOrDefault(match => match.UserId == player_id && match.PlayedMNR && !match.IsBanned);
             
             var score = database.Scores
                 .AsNoTracking()
@@ -908,7 +908,8 @@ namespace GameServer.Implementation.Player
                 .ThenInclude(u => u.PlayerExperiencePoints)
                 .Include(s => s.User)
                 .ThenInclude(u => u.PlayerCreationPoints)
-                .FirstOrDefault(match => match.IsMNR && match.PlayerId == player_id && match.SubGroupId == (int)game_type-10);
+                .FirstOrDefault(match => match.IsMNR && match.PlayerId == player_id
+                    && match.SubGroupId == (int)game_type-10 && !match.User.IsBanned);
 
             if (user == null || (game_type == GameType.ONLINE_HOT_SEAT_RACE && score == null))
             {

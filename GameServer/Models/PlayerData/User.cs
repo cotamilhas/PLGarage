@@ -182,7 +182,7 @@ namespace GameServer.Models.PlayerData
                 .Include(x => x.RacesFinished)
                 .Include(x => x.PlayerCreationPoints)
                 .Include(x => x.PlayerExperiencePoints)
-                .Where(match => match.Username != "ufg" && match.PlayedMNR);
+                .Where(match => match.Username != "ufg" && match.PlayedMNR && !match.IsBanned);
 
             //creator points
             if (game_type == GameType.OVERALL_CREATORS && leaderboardType == LeaderboardType.LIFETIME)
