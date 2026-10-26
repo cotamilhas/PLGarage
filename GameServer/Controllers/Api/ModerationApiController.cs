@@ -249,13 +249,13 @@ namespace GameServer.Controllers.Api
         [HttpGet]
         [Authorize(Policy = JWTUtils.ModeratorPolicy)]
         [Route("/api/moderation/player_creations")]
-        public IActionResult GetPlayerCreationsWithStatus(int page, int per_page, ModerationStatus status, SortOrder? sortOrder)
+        public IActionResult GetPlayerCreationsWithStatus(int page, int per_page, ModerationStatus status, SortOrder? sortOrder, bool includeDeleted = false)
         {
             var user = Moderation.GetUser(database, User);
             if (user == null || !(user.ChangeCreationStatus || user.ResetCreationStats || user.RemovePlayerCreations))
                 return StatusCode(403);
 
-            return Content(Moderation.GetPlayerCreationsWithStatus(database, page, per_page, status, sortOrder ?? SortOrder.desc));
+            return Content(Moderation.GetPlayerCreationsWithStatus(database, page, per_page, status, sortOrder ?? SortOrder.desc, includeDeleted));
         }
 
         [HttpDelete]
@@ -608,13 +608,13 @@ namespace GameServer.Controllers.Api
         [HttpGet]
         [Authorize(Policy = JWTUtils.ModeratorPolicy)]
         [Route("/api/moderation/player_creation_complaints")]
-        public IActionResult GetPlayerCreationComplaints(int page, int per_page, int? from, int? playerID, int? playerCreationID, SortOrder? sortOrder, ReportState? state, List<int> assignedModerators)
+        public IActionResult GetPlayerCreationComplaints(int page, int per_page, int? from, int? playerID, int? playerCreationID, SortOrder? sortOrder, ReportState? state, List<int> assignedModerators, bool includeDeleted = false)
         {
             var user = Moderation.GetUser(database, User);
             if (user == null || !user.ViewPlayerCreationComplaints)
                 return StatusCode(403);
             
-            return Content(Moderation.GetPlayerCreationComplaints(database, page, per_page, from, playerID, playerCreationID, sortOrder ?? SortOrder.desc, state, assignedModerators));
+            return Content(Moderation.GetPlayerCreationComplaints(database, page, per_page, from, playerID, playerCreationID, sortOrder ?? SortOrder.desc, state, assignedModerators, includeDeleted));
         }
 
         [HttpGet]
