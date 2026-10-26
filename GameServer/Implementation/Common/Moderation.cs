@@ -387,7 +387,10 @@ namespace GameServer.Implementation.Common
             return "ok";
         }
 
-        public static string GetPlayerCreationsWithStatus(Database database, int page, int per_page, ModerationStatus status, SortOrder? sortOrder)
+        public static string GetPlayerCreationsWithStatus(
+            Database database, 
+            int page, int per_page, 
+            ModerationStatus status, SortOrder? sortOrder, bool includeDeleted = false)
         {
             if (page <= 0)
                 page = 1;
@@ -396,7 +399,7 @@ namespace GameServer.Implementation.Common
 
             var query = database.PlayerCreations
                 .AsNoTracking()
-                .Where(match => match.ModerationStatus == status);
+                .Where(match => match.ModerationStatus == status && (includeDeleted || match.Type != PlayerCreationType.DELETED));
 
             var pageStart = PageCalculator.GetPageStart(page, per_page);
 
@@ -915,7 +918,11 @@ namespace GameServer.Implementation.Common
         #endregion
 
         #region PlayerComplaints
-        public static string GetPlayerComplaints(Database database, int page, int per_page, int? from, int? playerID, SortOrder? sortOrder, ReportState? state, List<int> assignedModerators)
+        public static string GetPlayerComplaints(Database database, 
+            int page, int per_page, 
+            int? from, int? playerID, 
+            SortOrder? sortOrder, ReportState? state, List<int> assignedModerators, 
+            bool includeBanned = false)
         {
             if (page <= 0)
                 page = 1;
@@ -927,7 +934,8 @@ namespace GameServer.Implementation.Common
                 .Include(c => c.User)
                 .Include(c => c.Player)
                 .Include(c => c.ModeratorAssignments)
-                .Where(match => from == null || match.UserId == from);
+                .Where(match => from == null || match.UserId == from)
+                .Where(match => !match.Player.IsBanned || includeBanned);
 
             if (playerID != null)
                 query = query.Where(match => match.PlayerId == playerID);
@@ -981,7 +989,12 @@ namespace GameServer.Implementation.Common
         #endregion
 
         #region PlayerCreationComplaints
-        public static string GetPlayerCreationComplaints(Database database, int page, int per_page, int? from, int? playerID, int? playerCreationID, SortOrder? sortOrder, ReportState? state, List<int> assignedModerators)
+        public static string GetPlayerCreationComplaints(
+            Database database, 
+            int page, int per_page, 
+            int? from, int? playerID, int? playerCreationID, 
+            SortOrder? sortOrder, ReportState? state, List<int> assignedModerators
+            bool includeDeleted = false)
         {
             if (page <= 0)
                 page = 1;
@@ -994,7 +1007,8 @@ namespace GameServer.Implementation.Common
                 .Include(c => c.Player)
                 .Include(c => c.PlayerCreation)
                 .Include(c => c.ModeratorAssignments)
-                .Where(match => from == null || match.UserId == from);
+                .Where(match => (from == null || match.UserId == from) &&
+                                (!match.IsDeleted || includeDeleted));
 
             if (playerID != null)
                 query = query.Where(match => match.PlayerId == playerID);

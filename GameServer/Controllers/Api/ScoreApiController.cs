@@ -210,6 +210,7 @@ namespace GameServer.Controllers.Api
                 .Where(c => c.IsMNR 
                         && c.Platform == platform 
                         && c.Type != PlayerCreationType.DELETED
+                        && c.Type != PlayerCreationType.STORY
                         && c.ModerationStatus != ModerationStatus.BANNED
                         && c.ModerationStatus != ModerationStatus.ILLEGAL);
 
