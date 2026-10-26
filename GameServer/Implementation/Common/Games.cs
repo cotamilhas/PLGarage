@@ -490,8 +490,8 @@ namespace GameServer.Implementation.Common
                     character.LongestDrift = stats.longest_drift;
                 if (stats.longest_hang_time > character.LongestHangTime)
                     character.LongestHangTime = stats.longest_hang_time;
-                if (stats.best_lap_time > character.BestLapTime)
-                    character.BestLapTime = stats.longest_hang_time;
+                if (stats.best_lap_time > 0 && (character.BestLapTime <= 0 || stats.best_lap_time < character.BestLapTime))
+                    character.BestLapTime = stats.best_lap_time;
             }
 
             if (kart != null)
@@ -500,8 +500,8 @@ namespace GameServer.Implementation.Common
                     kart.LongestDrift = stats.longest_drift;
                 if (stats.longest_hang_time > kart.LongestHangTime)
                     kart.LongestHangTime = stats.longest_hang_time;
-                if (stats.best_lap_time > kart.BestLapTime)
-                    kart.BestLapTime = stats.longest_hang_time;
+                if (stats.best_lap_time > 0 && (kart.BestLapTime <= 0 || stats.best_lap_time < kart.BestLapTime))
+                    kart.BestLapTime = stats.best_lap_time;
             }
 
             var Track = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == game.Track);
@@ -512,8 +512,8 @@ namespace GameServer.Implementation.Common
                     Track.LongestDrift = stats.longest_drift;
                 if (stats.longest_hang_time > Track.LongestHangTime)
                     Track.LongestHangTime = stats.longest_hang_time;
-                if (stats.best_lap_time > Track.BestLapTime)
-                    Track.BestLapTime = stats.longest_hang_time;
+                if (stats.best_lap_time > 0 && (Track.BestLapTime <= 0 || stats.best_lap_time < Track.BestLapTime))
+                    Track.BestLapTime = stats.best_lap_time;
             }
 
             database.SaveChanges();

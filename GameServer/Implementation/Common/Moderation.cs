@@ -411,11 +411,24 @@ namespace GameServer.Implementation.Common
                 ID = creation.PlayerCreationId,
                 Name = creation.Name,
                 Description = creation.Description,
-                Type = creation.Type,
+                Type = creation.Type.ToString(),
                 OriginalPlayerID = creation.OriginalPlayerId,
+                OriginalUsername = database.Users
+                    .Where(user => user.UserId == creation.OriginalPlayerId)
+                    .Select(user => user.Username)
+                    .FirstOrDefault(),
                 ParentPlayerID = creation.ParentPlayerId,
+                ParentUsername = database.Users
+                    .Where(user => user.UserId == creation.ParentPlayerId)
+                    .Select(user => user.Username)
+                    .FirstOrDefault(),
                 PlayerID = creation.PlayerId,
+                Username = creation.Author.Username,
                 ParentCreationID = creation.ParentCreationId,
+                ParentCreationName = database.PlayerCreations
+                    .Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                    .Select(parent => parent.Name)
+                    .FirstOrDefault(),
                 ModerationStatus = creation.ModerationStatus,
                 IsMNR = creation.IsMNR
             })
@@ -718,7 +731,15 @@ namespace GameServer.Implementation.Common
             database.AwardUnlocks.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
             database.HeartedPlayerCreations.Where(x => x.UserId == targetUserId).ExecuteDelete();
             database.PlayerCreationBookmarks.Where(x => x.UserId == targetUserId).ExecuteDelete();
-            database.HeartedProfiles.Where(x => x.UserId == targetUserId || x.HeartedUserId == targetUserId).ExecuteDelete();
+            database.HeartedProfiles
+                .Where(x => x.UserId == targetUserId
+                        || x.HeartedUserId == targetUserId)
+                .ExecuteDelete();
+            database.PlayerRatings
+                .Where(x => x.AuthorId == targetUserId
+                        || x.PlayerId == targetUserId)
+                .ExecuteDelete();
+            database.PlayerCreationRatings.Where(x => x.PlayerId == targetUserId).ExecuteDelete();
 
             database.ActivityLog.Where(match => match.AuthorId == user.UserId 
                 || match.PlayerId == user.UserId).ExecuteDelete();
@@ -1146,6 +1167,16 @@ namespace GameServer.Implementation.Common
         #endregion
 
         #region Announcements
+        public static string GetAnnouncement(Database database, int id)
+        {
+            var announcement = database.Announcements.FirstOrDefault(match => match.Id == id);
+
+            if (announcement == null)
+                return null;
+
+            return JsonConvert.SerializeObject(announcement);
+        }
+
         public static string GetAnnouncements(Database database, int page, int per_page, Platform? platform, SortOrder? sortOrder)
         {
             if (page <= 0)
@@ -1228,36 +1259,39 @@ namespace GameServer.Implementation.Common
 
             return hotLap == null ? "error_no_hotlap_file" : hotLap.TrackId.ToString();
         }
+
+        private static string ValidateHotLapTrack(PlayerCreationData creation)
+        {
+            if (creation == null)
+                return "error_creation_not_found";
+            if (creation.Type != PlayerCreationType.TRACK && creation.Type != PlayerCreationType.STORY)
+                return "error_not_a_track";
+            if (!creation.IsMNR || creation.Platform != Platform.PS3)
+                return "error_wrong_game_or_platform";
+            if (!creation.AutoReset)
+                return "error_track_no_autoreset";
+            if (creation.ModerationStatus == ModerationStatus.BANNED || creation.ModerationStatus == ModerationStatus.ILLEGAL)
+                return "error_track_banned";
+            
+            return null;
+        }
         
         public static string SetHotLap(Database database, int creationID)
         {
             var creation = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == creationID);
             
-            if (creation == null)
-                return "error_creation_not_found";
-            else if (creation.Type != PlayerCreationType.TRACK && creation.Type != PlayerCreationType.STORY)
-                return "error_not_a_track";
-            else if (!creation.IsMNR || creation.Platform != Platform.PS3)
-                return "error_wrong_game_or_platform";
-            else if (!creation.AutoReset)
-                return "error_track_no_autoreset";
-            else
-            {
-                var hotlap = ContentUpdates.ReadHotlapData();
+            string error = ValidateHotLapTrack(creation);
+            if (error != null)
+                return error;
+            
+            var hotlap = ContentUpdates.ReadHotlapData() ?? new HotLapData { TrackId = -1, Queue = [] };
+            hotlap.TrackId = creationID;
+            ContentUpdates.WriteHotlapData(hotlap);
+            
 
-                if (hotlap == null)
-                {
-                    ContentUpdates.GetNewHotLap(database);
-                    hotlap = ContentUpdates.ReadHotlapData();
-                    if (hotlap == null)
-                        return "error_no_hotlap_file";
-                }
-                
-                hotlap.TrackId = creationID;
-                ContentUpdates.WriteHotlapData(hotlap);
+            ServerCommunication.NotifyHotSeatPlaylistReset();
 
-                return "ok";
-            }
+            return "ok";
         }
         
         public static string GetHotLapQueue(Database database, int page, int per_page)
@@ -1269,21 +1303,44 @@ namespace GameServer.Implementation.Common
 
             var pageStart = PageCalculator.GetPageStart(page, per_page);
             
-            var queuePage =  hotlap.Queue.Skip(pageStart).Take(per_page).ToList();
+            var queuePage = hotlap.Queue.Skip(pageStart).Take(per_page).ToList();
 
-            var queue = database.PlayerCreations.Select(creation => new MinimalCreationInfo
-            {
-                ID = creation.PlayerCreationId,
-                Name = creation.Name,
-                Description = creation.Description,
-                Type = creation.Type,
-                OriginalPlayerID = creation.OriginalPlayerId,
-                ParentPlayerID = creation.ParentPlayerId,
-                PlayerID = creation.PlayerId,
-                ParentCreationID = creation.ParentCreationId,
-                ModerationStatus = creation.ModerationStatus,
-                IsMNR = creation.IsMNR
-            }).Where(match => queuePage.Contains(match.ID)).ToList();
+            var infos = database.PlayerCreations
+                .Where(creation => queuePage.Contains(creation.PlayerCreationId))
+                .Select(creation => new MinimalCreationInfo
+                {
+                    ID = creation.PlayerCreationId,
+                    Name = creation.Name,
+                    Description = creation.Description,
+                    Type = creation.Type.ToString(),
+                    OriginalPlayerID = creation.OriginalPlayerId,
+                    OriginalUsername = database.Users
+                        .Where(user => user.UserId == creation.OriginalPlayerId)
+                        .Select(user => user.Username)
+                        .FirstOrDefault(),
+                    ParentPlayerID = creation.ParentPlayerId,
+                    ParentUsername = database.Users
+                        .Where(user => user.UserId == creation.ParentPlayerId)
+                        .Select(user => user.Username)
+                        .FirstOrDefault(),
+                    PlayerID = creation.PlayerId,
+                    ParentCreationID = creation.ParentCreationId,
+                    ParentCreationName = database.PlayerCreations
+                        .Where(parent => parent.PlayerCreationId == creation.ParentCreationId)
+                        .Select(parent => parent.Name)
+                        .FirstOrDefault(),
+                    Username = creation.Author.Username,
+                    ModerationStatus = creation.ModerationStatus,
+                    IsMNR = creation.IsMNR
+                })
+                .ToList()
+                .ToDictionary(info => info.ID);
+            
+            var queue = queuePage
+                .Select(id => infos.TryGetValue(id, out var info)
+                    ? info
+                    : new MinimalCreationInfo { ID = id, Name = "(creation not found)" })
+                .ToList();
             
             return JsonConvert.SerializeObject(new ModerationPageResponse<MinimalCreationInfo>
             {
@@ -1296,35 +1353,20 @@ namespace GameServer.Implementation.Common
         {
             var creation = database.PlayerCreations.FirstOrDefault(match => match.PlayerCreationId == creationID);
             
-            if (creation == null)
-                return "error_creation_not_found";
-            else if (creation.Type != PlayerCreationType.TRACK && creation.Type != PlayerCreationType.STORY)
-                return "error_not_a_track";
-            else if (!creation.IsMNR || creation.Platform != Platform.PS3)
-                return "error_wrong_game_or_platform";
-            else if (!creation.AutoReset)
-                return "error_track_no_autoreset";
-            else
-            {
-                var hotlap = ContentUpdates.ReadHotlapData();
+            string error = ValidateHotLapTrack(creation);
+            if (error != null)
+                return error;
+            
+            var hotlap = ContentUpdates.ReadHotlapData() ?? new HotLapData { TrackId = -1, Queue = [] };
+            hotlap.Queue ??= [];
+            hotlap.Queue.Add(creationID);
+            
+            ContentUpdates.WriteHotlapData(hotlap);
 
-                if (hotlap == null)
-                {
-                    ContentUpdates.GetNewHotLap(database);
-                    hotlap = ContentUpdates.ReadHotlapData();
-                    if (hotlap == null)
-                        return "error_no_hotlap_file";
-                }
+            if (hotlap.TrackId == -1)
+            ContentUpdates.GetNewHotLap(database);
 
-                if (hotlap.Queue == null)
-                    hotlap.Queue = [creationID];
-                else
-                    hotlap.Queue.Add(creationID);
-                
-                ContentUpdates.WriteHotlapData(hotlap);
-
-                return "ok";
-            }
+            return "ok";
         }
         
         public static string RemoveFromHotLapQueue(Database database, int? index, int? creationID)
@@ -1332,22 +1374,20 @@ namespace GameServer.Implementation.Common
             var hotlap = ContentUpdates.ReadHotlapData();
 
             if (hotlap == null)
+                return "error_no_hotlap_file";
+
+            hotlap.Queue ??= [];
+
+            if (index != null)
             {
-                ContentUpdates.GetNewHotLap(database);
-                hotlap = ContentUpdates.ReadHotlapData();
-                if (hotlap == null)
-                    return "error_no_hotlap_file";
+                if (index.Value < 0 || index.Value >= hotlap.Queue.Count)
+                    return "error_invalid_index";
+
+                hotlap.Queue.RemoveAt(index.Value);
             }
 
-            if (hotlap.Queue == null)
-                hotlap.Queue = [];
-            else
-            {
-                if (index != null)
-                    hotlap.Queue.RemoveAt(index.Value);
-                if (creationID != null)
-                    hotlap.Queue.RemoveAll(match => match == creationID.Value);
-            }
+            if (creationID != null)
+                hotlap.Queue.RemoveAll(match => match == creationID.Value);
                 
             ContentUpdates.WriteHotlapData(hotlap);
 
@@ -1381,7 +1421,10 @@ namespace GameServer.Implementation.Common
         {
             var score = database.Scores
                 .FirstOrDefault(s => s.Id == scoreId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701));
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701));
 
             if (score == null)
                 return null;
@@ -1399,7 +1442,10 @@ namespace GameServer.Implementation.Common
         {
             var scores = database.Scores
                 .Where(s => s.SubKeyId == trackId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701))
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701))
                 .ToList();
 
             if (!scores.Any())
@@ -1418,7 +1464,10 @@ namespace GameServer.Implementation.Common
         {
             var scores = database.Scores
                 .Where(s => s.PlayerId == playerId
-                    && (s.SubGroupId == 703 || s.SubGroupId == 702 || s.SubGroupId == 701))
+                    && (s.SubGroupId == 705 
+                    || s.SubGroupId == 703
+                    || s.SubGroupId == 702 
+                    || s.SubGroupId == 701))
                 .ToList();
 
             if (!scores.Any())

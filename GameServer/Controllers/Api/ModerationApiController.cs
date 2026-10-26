@@ -732,6 +732,18 @@ namespace GameServer.Controllers.Api
         #region Announcements
         [HttpGet]
         [Authorize(Policy = JWTUtils.ModeratorPolicy)]
+        [Route("/api/moderation/announcement")]
+        public IActionResult GetAnnouncement(int id)
+        {
+            var user = Moderation.GetUser(database, User);
+            if (user == null || !user.ManageAnnouncements)
+                return StatusCode(403);
+
+            return Content(Moderation.GetAnnouncement(database, id));
+        }
+
+        [HttpGet]
+        [Authorize(Policy = JWTUtils.ModeratorPolicy)]
         [Route("/api/moderation/announcements")]
         public IActionResult GetAnnouncements(int page, int per_page, Platform? platform, SortOrder? sortOrder)
         {
