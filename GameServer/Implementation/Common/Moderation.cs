@@ -942,8 +942,7 @@ namespace GameServer.Implementation.Common
         public static string GetPlayerComplaints(Database database, 
             int page, int per_page, 
             int? from, int? playerID, 
-            SortOrder? sortOrder, ReportState? state, List<int> assignedModerators, 
-            bool includeBanned = false)
+            SortOrder? sortOrder, ReportState? state, List<int> assignedModerators)
         {
             if (page <= 0)
                 page = 1;
@@ -955,8 +954,7 @@ namespace GameServer.Implementation.Common
                 .Include(c => c.User)
                 .Include(c => c.Player)
                 .Include(c => c.ModeratorAssignments)
-                .Where(match => from == null || match.UserId == from)
-                .Where(match => !match.Player.IsBanned || includeBanned);
+                .Where(match => from == null || match.UserId == from);
 
             if (playerID != null)
                 query = query.Where(match => match.PlayerId == playerID);
