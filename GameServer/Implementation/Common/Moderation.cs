@@ -1012,7 +1012,7 @@ namespace GameServer.Implementation.Common
             Database database, 
             int page, int per_page, 
             int? from, int? playerID, int? playerCreationID, 
-            SortOrder? sortOrder, ReportState? state, List<int> assignedModerators
+            SortOrder? sortOrder, ReportState? state, List<int> assignedModerators,
             bool includeDeleted = false)
         {
             if (page <= 0)
@@ -1027,7 +1027,7 @@ namespace GameServer.Implementation.Common
                 .Include(c => c.PlayerCreation)
                 .Include(c => c.ModeratorAssignments)
                 .Where(match => (from == null || match.UserId == from) &&
-                                (!match.IsDeleted || includeDeleted));
+                                (includeDeleted || match.PlayerCreation.Type != PlayerCreationType.DELETED));
 
             if (playerID != null)
                 query = query.Where(match => match.PlayerId == playerID);
