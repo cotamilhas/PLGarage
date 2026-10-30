@@ -5,6 +5,8 @@ using GameServer.Models.PlayerData;
 using GameServer.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
 
 namespace GameServer.Controllers.Player
 {
@@ -28,10 +30,18 @@ namespace GameServer.Controllers.Player
         [Authorize]
         [AllowAnonymous]
         [Route("players/skill_levels.xml")]
-        public IActionResult GetSkillLevel(int[] id)
+        public IActionResult GetSkillLevel()
         {
             var session = Session.GetSession(database, User);
-            return Content(PlayerProfiles.GetSkillLevel(database, session, id), "application/xml;charset=utf-8");
+
+            // Logs show that this request causes commas to get converted to %2c so levels disappear when there is more than one in the lobby
+            int[] ids = string.Join(",", Request.Query["id"].ToArray())
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(value => int.TryParse(value, out int parsed) ? parsed : -1)
+                .Where(parsed => parsed > 0)
+                .ToArray();
+
+            return Content(PlayerProfiles.GetSkillLevel(database, session, ids), "application/xml;charset=utf-8");
         }
 
         [Route("skill_levels.xml")]

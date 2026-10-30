@@ -192,8 +192,8 @@ namespace GameServer.Controllers.Common
                         character.LongestDrift = game_player_stats.longest_drift;
                     if (game_player_stats.longest_hang_time > character.LongestHangTime)
                         character.LongestHangTime = game_player_stats.longest_hang_time;
-                    if (game_player_stats.best_lap_time > character.BestLapTime)
-                        character.BestLapTime = game_player_stats.longest_hang_time;
+                    if (game_player_stats.best_lap_time > 0 && (character.BestLapTime <= 0 || game_player_stats.best_lap_time < character.BestLapTime))
+                        character.BestLapTime = game_player_stats.best_lap_time;
                 }
 
                 if (kart != null)
@@ -207,16 +207,16 @@ namespace GameServer.Controllers.Common
                         kart.LongestDrift = game_player_stats.longest_drift;
                     if (game_player_stats.longest_hang_time > kart.LongestHangTime)
                         kart.LongestHangTime = game_player_stats.longest_hang_time;
-                    if (game_player_stats.best_lap_time > kart.BestLapTime)
-                        kart.BestLapTime = game_player_stats.longest_hang_time;
+                    if (game_player_stats.best_lap_time > 0 && (kart.BestLapTime <= 0 || game_player_stats.best_lap_time < kart.BestLapTime))
+                        kart.BestLapTime = game_player_stats.best_lap_time;
                 }
 
                 if (game_player_stats.longest_drift > Track.LongestDrift)
                     Track.LongestDrift = game_player_stats.longest_drift;
                 if (game_player_stats.longest_hang_time > Track.LongestHangTime)
                     Track.LongestHangTime = game_player_stats.longest_hang_time;
-                if (game_player_stats.best_lap_time > Track.BestLapTime)
-                    Track.BestLapTime = game_player_stats.longest_hang_time;
+                if (game_player_stats.best_lap_time > 0 && (Track.BestLapTime <= 0 || game_player_stats.best_lap_time < Track.BestLapTime))
+                    Track.BestLapTime = game_player_stats.best_lap_time;
             }
 
             if (!session.IsMNR)

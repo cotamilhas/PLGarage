@@ -1,26 +1,17 @@
 ﻿using GameServer.Models.Response;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace GameServer.Models.Config
 {
     public class SkillConfig
     {
-        private static SkillConfig instance = null;
+        private static readonly Lazy<SkillConfig> instance = new(GetFromFile);
 
-        public static SkillConfig Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = GetFromFile();
-                }
-
-                return instance;
-            }
-        }
+        public static SkillConfig Instance => instance.Value;
 
         private List<SkillLevel> skillLevels = [
             new SkillLevel
@@ -211,10 +202,15 @@ namespace GameServer.Models.Config
             if (File.Exists("./skill_levels.json"))
             {
                 string file = File.ReadAllText("./skill_levels.json");
-                config.skillLevels = JsonConvert.DeserializeObject<List<SkillLevel>>(file);
+                var loaded = JsonConvert.DeserializeObject<List<SkillLevel>>(file);
+                
+                if (loaded != null && loaded.Count != 0)
+                    config.skillLevels = loaded;
             }
             else
                 File.WriteAllText("./skill_levels.json", JsonConvert.SerializeObject(config.skillLevels, Formatting.Indented));
+            
+            config.skillLevels = config.skillLevels.OrderBy(s => s.Points).ToList();
             
             return config;
         }
@@ -230,7 +226,7 @@ namespace GameServer.Models.Config
                     Points = 0
                 };
             }
-            skillLevels.Sort((curr, prev) => curr.Points.CompareTo(prev.Points));
+            
             int index = 0;
             for (int i = 0; i < skillLevels.Count; i++)
             {
@@ -242,7 +238,6 @@ namespace GameServer.Models.Config
 
         public string GetSkillLevelList()
         {
-            skillLevels.Sort((curr, prev) => curr.Points.CompareTo(prev.Points));
             var skillLevelList = new List<skill_level>();
 
             foreach (SkillLevel skillLevel in skillLevels) 

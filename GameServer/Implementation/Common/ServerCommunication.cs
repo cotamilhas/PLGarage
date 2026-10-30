@@ -104,7 +104,11 @@ namespace GameServer.Implementation.Common
                         break;
                     }
                 }
-                else break;
+                else
+                {
+                    Log.Warning($"Unexpected {result.MessageType} message from server {ServerID}, closing its connection");
+                    break;
+                }
 
                 try
                 {
@@ -122,8 +126,8 @@ namespace GameServer.Implementation.Common
                     Log.Debug($"Failed to process message: {e}");
                 }
             }
-
-            Servers.RemoveAll(match => match.ServerId == ServerID);
+            Log.Warning($"Connection from server {ServerID} ended (state {webSocket.State})");
+            Servers.RemoveAll(match => match.ServerId == ServerID && match.Socket == webSocket);
             if (webSocket is { State: WebSocketState.Aborted or WebSocketState.Closed or WebSocketState.CloseSent })
                 return;
             
@@ -139,6 +143,9 @@ namespace GameServer.Implementation.Common
 
         private static void ProcessMessage(Database database, WebSocket socket, GatewayMessage message)
         {
+
+            Log.Debug($"Gateway message {message.Type} from {message.From}");
+
             var response = new GatewayMessage
             {
                 From = MasterServer,
@@ -265,7 +272,7 @@ namespace GameServer.Implementation.Common
                                                     character.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > character.LongestHangTime)
                                                     character.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > character.BestLapTime)
+                                                if (player.BestLapTime > 0 && (character.BestLapTime <= 0 || player.BestLapTime < character.BestLapTime))
                                                     character.BestLapTime = player.BestLapTime;
                                             }
 
@@ -279,7 +286,7 @@ namespace GameServer.Implementation.Common
                                                     kart.LongestDrift = player.BestDrift;
                                                 if (player.BestHangTime > kart.LongestHangTime)
                                                     kart.LongestHangTime = player.BestHangTime;
-                                                if (player.BestLapTime > kart.BestLapTime)
+                                                if (player.BestLapTime > 0 && (kart.BestLapTime <= 0 || player.BestLapTime < kart.BestLapTime))
                                                     kart.BestLapTime = player.BestLapTime;
                                             }
                                         }
@@ -304,7 +311,7 @@ namespace GameServer.Implementation.Common
                                             creation.LongestDrift = player.BestDrift;
                                         if (player.BestHangTime > creation.LongestHangTime)
                                             creation.LongestHangTime = player.BestHangTime;
-                                        if (player.BestLapTime > creation.BestLapTime)
+                                        if (player.BestLapTime > 0 && (creation.BestLapTime <= 0 || player.BestLapTime < creation.BestLapTime))
                                             creation.BestLapTime = player.BestLapTime;
 
                                         if (player.Finished) 
@@ -408,7 +415,7 @@ namespace GameServer.Implementation.Common
                                                     FinishTime = player.FinishTime,
                                                     Platform = creation.Platform,
                                                     PlayerId = player.PlayerConnectId,
-                                                    PlaygroupSize = player.PlaygroupSize,
+                                                    PlaygroupSize = info.IsMNR ? 0 : player.PlaygroupSize,
                                                     Points = player.Points,
                                                     SubGroupId = info.IsMNR ? (int)info.GameType - 10 : (int)info.GameType,
                                                     SubKeyId = info.TrackId,
@@ -571,7 +578,8 @@ namespace GameServer.Implementation.Common
             var output = payload.AsSpan(EncryptedHeaderSize, contents.Length);
             
             RandomNumberGenerator.Fill(nonce);
-            Aes.Encrypt(nonce, contents, output, tag);
+            lock (Aes)
+                Aes.Encrypt(nonce, contents, output, tag); // testing to see if it fixes Bombd cryptographic errors
             return payload;
         }
 
@@ -582,7 +590,8 @@ namespace GameServer.Implementation.Common
             ReadOnlySpan<byte> data = message.Slice(EncryptedHeaderSize, message.Length - EncryptedHeaderSize);
 
             byte[] output = new byte[data.Length];
-            Aes.Decrypt(nonce, data, tag, output);
+            lock (Aes)
+                Aes.Decrypt(nonce, data, tag, output); // testing to see if it fixes Bombd cryptographic errors
             return Encoding.UTF8.GetString(output);
         }
 
