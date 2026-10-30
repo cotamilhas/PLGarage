@@ -260,6 +260,9 @@ namespace GameServer.Implementation.Common
             if (moderator == null || string.IsNullOrEmpty(username))
                 return moderator == null ? "error_moderator_not_found" : "error_username_is_empty";
 
+            if (database.Moderators.Any(match => match.Username == username))
+                return "error_username_already_exists";
+
             moderator.Username = username;
             database.SaveChanges();
 
