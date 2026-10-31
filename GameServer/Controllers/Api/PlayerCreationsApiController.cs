@@ -61,13 +61,17 @@ namespace GameServer.Controllers.Api
                 );
 
             var lbpkTotal = q.Count(x => !x.IsMNR);
-            var mnrTotal = q.Count(x => x.IsMNR);
+            var mnrPS3Total = q.Count(x => x.IsMNR && x.Platform == Platform.PS3);
+            var mnrPSPTotal = q.Count(x => x.IsMNR && x.Platform == Platform.PSP);
+            var mnrPSVTotal = q.Count(x => x.IsMNR && x.Platform == Platform.PSV);
 
             return Json(new
             {
                 total,
                 totalLBPK = lbpkTotal,
-                totalMNR = mnrTotal,
+                totalMNRPS3 = mnrPS3Total,
+                totalMNRPSP = mnrPSPTotal,
+                totalMNRPSV = mnrPSVTotal,
                 lbpk = lbpkTypeCounts,
                 mnr = mnrPlatformCounts
             });

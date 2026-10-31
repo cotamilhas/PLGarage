@@ -257,11 +257,8 @@ namespace GameServer.Implementation.Common
         
         public static string SetUsername(Database database, Moderator moderator, string username)
         {
-            if (moderator == null || string.IsNullOrEmpty(username))
-                return moderator == null ? "error_moderator_not_found" : "error_username_is_empty";
-
-            if (database.Moderators.Any(match => match.Username == username))
-                return "error_username_already_exists";
+            if (moderator == null || string.IsNullOrEmpty(username) || database.Moderators.Any(match => match.Username == username))
+                return moderator == null ? "error_moderator_not_found" : (string.IsNullOrEmpty(username) ? "error_username_is_empty" : "error_username_already_exists");
 
             moderator.Username = username;
             database.SaveChanges();
